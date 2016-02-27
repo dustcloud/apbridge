@@ -66,7 +66,7 @@ except:
 # ----------------------------------------------------------------------
 # Platform environment setup
 
-# Find "external" repositories: shared, OpenSSL-FIPS
+# Find "external" repositories: shared
 
 EXTERNAL_REPO_SEARCH_PATH = ['.', '..']
 
@@ -118,21 +118,27 @@ def getBuildDir(env, generated_file_dir = 'gen'):
     buildDir += build_dir_suffix
     return buildDir
 
+BOOST_LIBS = [
+    'boost_timer', 
+    'boost_chrono', 
+    'boost_thread', 
+    'boost_system',
+    'boost_program_options',
+    'boost_filesystem',
+]
+
+TOOL_LIBS = [
+    'log4cxx', 
+    'czmq', 
+    'zmq', 
+    'protobuf', 
+    'pthread', 
+]
 
 def getLinuxEnv(baseEnv):
     'Construct the Linux build environment'
     boost_incdir, boost_libdir = findBoostDirs(baseEnv)
-    baseEnv['externals'] = findExternals(['shared', 'OpenSSL-FIPS'], 
-                                          EXTERNAL_REPO_SEARCH_PATH)
-
-    if baseEnv['target'] in 'i686-linux' or baseEnv['target'] in 'x86_64-linux':
-        openssl_dir = os.path.join('#', baseEnv['externals']['OpenSSL-FIPS'], 
-                               'i686-linux')  # TODO: use HOST_ARCH for OpenSSL dir
-    elif baseEnv['target'] in 'armpi-linux':
-        openssl_dir = os.path.join('#', baseEnv['externals']['OpenSSL-FIPS'], 
-                               'arm-atmel-linux')  # TODO: use HOST_ARCH for OpenSSL dir
-    else:
-        raise UserError('Unknown target architecture, supported are i686, x86_64 and armpi')
+    baseEnv['externals'] = findExternals(['shared'], EXTERNAL_REPO_SEARCH_PATH)
 
     env = baseEnv.Clone(
         HOST_ARCH = platform.machine() + '-linux',
@@ -163,6 +169,11 @@ def getLinuxEnv(baseEnv):
     env['PROTOBUFCOM_DST'] = '$BUILD_DIR'
     env['PROTOBUFCOM'] = 'LD_LIBRARY_PATH=$TOOLS_DIR $PROTOC -I. -I$BUILD_DIR --proto_path=$BUILD_DIR --cpp_out=$PROTOBUFCOM_DST $SOURCE' # -I$SOURCE.dir --cpp_out=$TARGET.dir
 
+    # Libraries
+    env['BOOST_LIBS'] = [b + env['boost_lib_suffix'] for b in BOOST_LIBS]
+    env['TOOL_LIBS'] = env['BOOST_LIBS'] + TOOL_LIBS
+    env['GPS_LIBS'] = ['gps', 'dbus-1']
+    
     # Conditional build flags
     if int(env['debug']):
         env.Append(CCFLAGS = ['-g'])
@@ -171,23 +182,6 @@ def getLinuxEnv(baseEnv):
     
     return env
 
-
-BOOST_LIBS = [
-    'boost_timer', 
-    'boost_chrono', 
-    'boost_thread', 
-    'boost_system',
-    'boost_program_options',
-    'boost_filesystem',
-]
-
-TOOL_LIBS = [
-    'log4cxx', 
-    'czmq', 
-    'zmq', 
-    'protobuf', 
-    'pthread', 
-]
 
 def get_i686_platform(env):
     'Set architecture-specific flags for i686'
@@ -276,6 +270,7 @@ env.Append(CPPPATH=['#',
                     '#/common',
                     os.path.join('#', env['externals']['shared'], 'include'),
                     os.path.join('#', env['BUILD_DIR']),
+                    os.path.join('#', env['BUILD_DIR'], 'APInterface'),
                     os.path.join('#', env['BUILD_DIR'], 'logging'),
                     os.path.join('#', env['BUILD_DIR'], 'rpc'),
                     os.path.join('#', env['BUILD_DIR'], 'public'),
@@ -285,9 +280,18 @@ env.Append(CPPPATH=['#',
 env['DIST_TARGETS'] = {}
 
 # ----------------------------------------------------------------------
+# Tools initialization    
+import gen_enum
+import gen_protobuf
+import gen_version
+
+gen_enum.init(env)
+gen_protobuf.init(env)
+gen_version.init(env)
+
+# ----------------------------------------------------------------------
 # Read all SConscripts
 dirs = [
-    '.',
     'APInterface',
     'common',
     'logging',
@@ -297,31 +301,27 @@ dirs = [
 
 for d in dirs:
     build_dir = os.path.join(env['BUILD_DIR'], d)
-    SConscript(os.path.join(d, 'SConscript'),
+    SConscript(os.path.join(d, 'SConscript.apc'),
                variant_dir = build_dir,
                duplicate = 0,
                exports = {"env": env})
 
+               
 # don't use variant BUILD_DIR with python
-SConscript(os.path.join('python', 'SConscript'),
-           exports = {"env": env})
-
-# don't use variant BUILD_DIR with scripts
-SConscript(os.path.join('scripts', 'SConscript'),
+SConscript(os.path.join('python', 'SConscript.apc'),
            exports = {"env": env})
 
 # include SConscript.release last
-SConscript('SConscript.release',
-           variant_dir = os.path.join(env['BUILD_DIR'], 'release'),
-           duplicate = 0,
-           exports = {"env": env})
-
+#SConscript('SConscript.release',
+#           variant_dir = os.path.join(env['BUILD_DIR'], 'release'),
+#           duplicate = 0,
+#           exports = {"env": env})
 
 # ----------------------------------------------------------------------
 # Useful aliases
 
 Alias('all', ['apbridge'])
 # all components that can be released
-Alias('all_release', ['apbridge_release'])
+#Alias('all_release', ['apbridge_release'])
 # all components that can be published
-Alias('all_publish', ['apbridge_publish'])
+#Alias('all_publish', ['apbridge_publish'])
