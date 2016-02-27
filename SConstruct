@@ -199,7 +199,7 @@ def get_raspi2_platform(env):
     'Set architecture-specific flags for raspberry pi 2'
 
     # TODO: compiler location
-    env['TOOLCHAIN_DIR'] = "$tools_root/armpi-linux/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian"
+    env['TOOLCHAIN_DIR'] = "/tools/armpi-linux/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian"
     env['CXX']  = '$TOOLCHAIN_DIR/bin/arm-linux-gnueabihf-g++'
     env['LINK'] = '$TOOLCHAIN_DIR/bin/arm-linux-gnueabihf-g++'
 
