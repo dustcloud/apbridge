@@ -161,7 +161,8 @@ def getLinuxEnv(baseEnv):
         # the --start-group and --end-group directives let gcc resolve library ordering
         LINKCOM='$LINK -o $TARGET $SOURCES $LINKFLAGS $_LIBDIRFLAGS -Wl,--start-group $_LIBFLAGS -Wl,--end-group',
         # rpath finds shared libraries at runtime without LD_LIBRARY_PATH
-        # LINKFLAGS=['-Wl,-rpath,/opt/dust-apbridge/lib'],
+        LINKFLAGS=['-Wl,-rpath,/opt/dust-apbridge/lib',
+                   '-Wl,-rpath,$TOOLS_DIR/lib'],
     )
 
     # Compile actions for various intermediate languages
@@ -172,7 +173,7 @@ def getLinuxEnv(baseEnv):
     # Libraries
     env['BOOST_LIBS'] = [b + env['boost_lib_suffix'] for b in BOOST_LIBS]
     env['TOOL_LIBS'] = env['BOOST_LIBS'] + TOOL_LIBS
-    env['GPS_LIBS'] = ['gps', 'dbus-1']
+    env['GPS_LIBS'] = ['gps']
     
     # Conditional build flags
     if int(env['debug']):
