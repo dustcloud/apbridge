@@ -1,0 +1,78 @@
+package common;
+
+// List metadata
+
+/**
+ * List request
+ *
+ * \param startIndex   Starting index for response elements
+ * \param maxLength    Maximum number of elements in response
+ */
+message ListReq {
+   optional uint32 startIndex = 1;
+   optional uint32 maxLength  = 2;
+}
+
+
+// Authorization privileges
+
+/**
+ * User privilege levels
+ */
+enum UserPrivilege {
+   NONE    = 0;  // User doesn't have any privilege
+   VIEWER  = 1;  // User can view, but cannot change configuration
+   USER    = 2;  // User can view and update configuration
+}
+
+/**
+ * Authorization request
+ *
+ * \param userId     User id to be associated with the request
+ * \param privilege  Requesting user's privilege
+ * \param timestamp  Timestamp value
+ * \param nonce      Nonce used for the request signature
+ * \param signature  Signature of the request
+ */
+message AuthReq {
+   required string        userId    = 1;
+   required UserPrivilege privilege = 2;
+   required int64         timestamp = 3;
+   required bytes         nonce     = 4;
+   required bytes         signature = 5; 
+}
+
+
+// Version response
+
+/**
+ * Version response
+ *
+ * \param major   Major version number
+ * \param minor   Minor version number
+ * \param release Release version number
+ * \param build   Build version number
+ * \param label   String version label
+*/
+message VersionResp {
+   optional uint32 major   = 1;
+   optional uint32 minor   = 2;
+   optional uint32 release = 3;
+   optional uint32 build   = 4;
+   optional string label   = 5;
+}
+
+/**
+  *  Delay statistic
+  */
+message DelayStatItem {
+   required int64   threshold = 1;
+   required int64   numEvents = 2;
+}
+
+message DelayStat {
+   repeated DelayStatItem delays = 1;
+   required DelayStatItem outThresholdEvents = 2;
+   optional double        maxDelay = 3;
+   optional int64         numEvents = 4;
+}

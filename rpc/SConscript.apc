@@ -1,0 +1,11 @@
+Import('env')
+
+import os
+
+rpc_proto = env.ProtobufCpp('common')
+
+rpc_src = Glob('*.cpp') + [rpc_proto[0], os.path.join('utils', 'rpc_logger.cpp'), os.path.join('workers', 'RpcWorker.cpp')]
+# note: by using DustLibrary, we automatically find generated sources
+librpc = env.DustLibrary('rpc', rpc_src)
+Alias('librpc', librpc)
+

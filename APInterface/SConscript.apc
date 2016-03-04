@@ -1,0 +1,38 @@
+Import('env')
+
+import os
+
+apc_proto = env.ProtobufCpp('rpc/apc')
+apccore_src = [
+            'APCCache.cpp',             
+            'APCClient.cpp',            
+            'APCCntrlNotifThread.cpp',  
+            'APCConnector.cpp',         
+            'APCoupler.cpp',            
+            'APCSerializer.cpp',        
+            'APMSerializer.cpp',        
+            'APMTransport.cpp',         
+            'GPS.cpp',                  
+            'HDLC.cpp',                 
+            'IOSrvThread.cpp',          
+            'NTPLeapSec.cpp',           
+            'SerialPort.cpp',
+            apc_proto[0],
+            os.path.join('rpc', 'APCRpcWorker.cpp')
+            ]
+
+# note: by using DustLibrary, we automatically find generated sources
+libapccore = env.DustLibrary('apccore', apccore_src)
+Alias('libapccore', libapccore)
+
+
+apc_version = env.VersionFile('apc_version.cpp', 'apc_version.tmpl')
+env.AlwaysBuild(apc_version)
+
+#apc_main_obj = env.Object('apc_main.cpp')
+#env.Depends(apc_main_obj, apc_proto[1])
+apc = env.Program('apc', ['apc_main.cpp', apc_version], 
+                   LIBS = ['apccore', 'common', 'logging', 'rpc', 'watchdog'] + 
+                          env['TOOL_LIBS'] + env['GPS_LIBS'])
+Alias('apc', apc)
+env['DIST_TARGETS']['apc'] = apc

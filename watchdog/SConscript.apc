@@ -1,0 +1,9 @@
+Import('env')
+
+import os
+
+watchdog_src = Glob('*.cpp')
+# note: by using DustLibrary, we automatically find generated sources
+libwatchdog = env.DustLibrary('watchdog', watchdog_src)
+Alias('libwatchdog', libwatchdog)
+

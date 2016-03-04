@@ -1,0 +1,70 @@
+package logevent;
+
+// Log Commands
+enum LogCommandType {
+   GET_LOGGERS = 1;
+   GET_LOG_LEVEL = 2;
+   SET_LOG_LEVEL = 3;
+   GET_REMOTE_ADDRESS = 4;
+}
+
+// Log Level
+enum LogLevel {
+   L_FATAL = 1;
+   L_ERROR = 2;
+   L_WARN = 3;
+   L_INFO = 4;
+   L_DEBUG = 5;
+   L_TRACE = 6;
+}
+
+// List of logger names
+message GetLoggersResponse {
+  repeated string loggers = 1; 
+}
+
+// Logger name
+message GetLoggerRequest {
+   required string logger = 1;
+}
+// Logger description
+message GetLogLevelResponse {
+   /// Log level	
+   required LogLevel logLevel = 1; 
+}
+
+
+// Set the log level of a particular logger
+message SetLogLevelRequest {
+   // Logger name
+   required string logger = 1;
+   // Log level
+   required LogLevel logLevel = 2;
+}
+
+
+// TODO: Get Remote Address command
+
+
+// Log Notifications
+
+// Notifications contain an identifier as the first element that allows for
+// easy filtering. For log event notifications, the first element is 
+// the logger name. 
+
+// Log message notification
+message LogEvent {
+   // Timestamp, Unix time in milliseconds since 1/1/1970
+   required int64 timestamp = 1;
+   // Log message
+   required string msg = 2;
+   // Log message level
+   required LogLevel logLevel = 3;
+   // Logger that generated the message
+   optional string logger = 4;
+   // Source code location of the message 
+   optional string location = 5;
+   // Thread from which the message was generated
+   optional string threadName = 6;
+}
+
