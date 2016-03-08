@@ -31,8 +31,8 @@ env.AlwaysBuild(apc_version)
 
 #apc_main_obj = env.Object('apc_main.cpp')
 #env.Depends(apc_main_obj, apc_proto[1])
-apc = env.Program('apc', ['apc_main.cpp', apc_version], 
+apbridge = env.Program('apc', ['apc_main.cpp', apc_version], 
                    LIBS = ['apccore', 'common', 'logging', 'rpc', 'watchdog'] + 
                           env['TOOL_LIBS'] + env['GPS_LIBS'])
-Alias('apc', apc)
-env['DIST_TARGETS']['apc'] = apc
+Alias('apbridge', apbridge)
+env['DIST_TARGETS']['apbridge'] = apbridge
