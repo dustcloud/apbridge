@@ -1,0 +1,11 @@
+# Supervisor configuration for APC {apc_client_id}
+[program:{apc_client_id}]
+command=/opt/dust-apc/bin/apc --client-id {apc_client_id} -c /opt/dust-apc/conf/{apc_client_id}.conf
+environment=LD_LIBRARY_PATH='/opt/dust-apc/lib'
+#
+directory=/opt/dust-apc
+autostart=true
+autorestart=true
+user=dust
+redirect_stderr=true
+stdout_logfile=/opt/dust-apc/logs/{apc_client_id}_activity.log

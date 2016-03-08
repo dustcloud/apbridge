@@ -1,0 +1,97 @@
+Template: dust-apc/apc_list
+Type: select
+Choices: ${CHOICES}
+Description: Please select one
+ Select an existing configuration to Modify 
+ .
+
+Template: dust-apc/client-id
+Type: string
+Description: Enter the configuration name
+ Current action: ${operation}
+ .
+ Multiple APCs can be configured to run on the same host,
+ They are identified by their names.
+ .
+ Please enter a unique name for APC.
+ .
+ Modify to blank name will delete the original configuration.
+
+Template: dust-apc/start-apc
+Type: boolean
+Default: false
+Description: Start APC automatically?
+ Supervisor configuration file will be created.
+ .
+ If your answer is Yes, APC will be started automatically 
+ and will attempt to restart if it is terminated.
+
+Template: dust-apc/port-offset
+Type: string
+Description: Enter APC's port offset
+ In order to communicate with multiple APCs on the same host, 
+ each APC must listen on different TCP port. 
+ .
+ If you plan to use only one APC, you may leave it blank.
+ Otherwise, make port-offset different for each APC.
+ Such as choose 10 for one APC and 20 for another APC.
+
+Template: dust-apc/host
+Type: string
+Description: Enter manager's host name or IP
+ Please enter the host name or IP address this APC 
+ connect with. 
+ .
+ If APC runs on the same host with voyager Manager, 
+ host name should be localhost. 
+
+Template: dust-apc/port
+Type: string
+Description: Enter manager's TCP port
+ Voyager Manager open up a few TCP ports to accept 
+ connection request.
+ .
+ By default, it is 9100.
+
+Template: dust-apc/api-device
+Type: string
+Description: Enter AP's API port
+ Each AP has 4 USB ports, in most case, the API port
+ is the 4th port.
+ .
+ Be sure your AP is attached to your host.
+ .
+ It could be /dev/ttyUSB or /dev/serial/by-id/
+
+Template: dust-apc/reset-device
+Type: string
+Description: Enter AP's reset port
+ Each AP has 4 USB ports, in most case, the reset port
+ is the 1st port.
+ .
+ Be sure your AP is attached to your host.
+ .
+ It could be /dev/ttyUSB or /dev/serial/by-id/
+
+Template: dust-apc/api-proto
+Type: select
+Choices: ipc, tcp
+Default: ipc
+Description: Set API protocol
+ APC can use IPC files under $APCHOME/var/run or 
+ use TCP ports to accept external request from APC console.
+ By default, API protocol is IPC.
+
+
+Template: dust-apc/stunnel
+Type: boolean
+Default: false
+Description: 
+ Do you want to setup or change stunnel configuration?
+
+Template: dust-apc/stunnel_remote_host
+Type: string
+Description: Input stunnel remote host name or IP address
+ Stunnel will be setup between local host and remote host.
+ Enter the remote host name. Leave blank if you don't want
+ any change.

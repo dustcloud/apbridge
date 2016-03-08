@@ -1,0 +1,20 @@
+#ACTION=="remove", SUBSYSTEM=="usb", RUN+="/opt/dust-apc/bin/update-apc-config.py delete --name all"
+
+SUBSYSTEM!="tty", GOTO="dust_usbs_end"
+KERNEL!="ttyUSB[0-9]*", GOTO="dust_usbs_end"
+
+SUBSYSTEMS=="usb-serial", ENV{.ID_PORT}="$attr{port_number}"
+
+ENV{ID_SERIAL}=="", GOTO="dust_usbs_end"
+SUBSYSTEMS=="usb", ENV{ID_USB_INTERFACE_NUM}="$attr{bInterfaceNumber}"
+ENV{ID_USB_INTERFACE_NUM}=="", GOTO="dust_usbs_end"
+
+# change group for dust usb
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6011", GROUP="dialout"
+
+# we create APC conf only at every 4th USB port (00 - 03)
+ENV{ID_USB_INTERFACE_NUM}!="03", GOTO="dust_usbs_end"
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6011", RUN+="/opt/dust-apc/bin/update-apc-config.py auto"
+
+LABEL="dust_usbs_end"
+

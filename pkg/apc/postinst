@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# TODO: make sure APC_HOME is the same
+APC_HOME=/opt/dust-apc
+
+# Ensure directories are created
+
+mkdir -p $APC_HOME/logs 
+mkdir -p $APC_HOME/etc 
+mkdir -p $APC_HOME/var/run
+
+# Ensure ownership and permissions
+
+chown -R dust:dust $APC_HOME/conf
+chown -R dust:dust $APC_HOME/etc
+chown -R dust:dust $APC_HOME/var $APC_HOME/var/run
+
+chown -R dust:dust $APC_HOME/env.sh
+
+# some logs are written by dust processes
+chown dust:dust $APC_HOME/logs
+
+chmod 755 $APC_HOME/bin/apcctl
+chmod 755 $APC_HOME/bin/apc_console.py
+chmod 755 $APC_HOME/bin/update-apc-config.py
+chmod 750 $APC_HOME/var/run
+
+# enable stunnel, original file saved as stunnel4.tmp
+sudo sed -i.tmp 's/ENABLED=0/ENABLED=1/' /etc/default/stunnel4
+
+# ensure supervisord is running (as root)
+cd $APC_HOME
+
+sudo supervisorctl reread
+if [ $? -ne 0 ]; then
+	# if supervisorctl fails, supervisor must not be running
+	echo "warning: supervisor is not running or not available to the dust user"
+	echo "Please start supervisor: 'sudo service supervisord start'"
+	# automatically trying to start supervisor on the APC is probably OK,
+	# but not OK in general
+fi
+
+# TODO: automatically start the APC process?
+#sudo supervisorctl restart apc
