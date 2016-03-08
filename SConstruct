@@ -46,8 +46,11 @@ if str(baseEnv['user_path']) == '1':
 Help("""
 To build apbridge:
  
- $ scons apbridge                 # build the AP Bridge for i686
- $ scons apbridge target=armpi    # build the AP Bridge for armpi
+ $ scons apbridge                      # build the APBridge for i386
+ $ scons apbridge target=armpi         # build the APBridge for armpi
+
+ $ scons apbridge_pkg                  # Create APbridge package for i386
+ $ scons apbridge_pkg target=armpi     # Create APbridge package for Raspbery Pi
 
 Options for building:
 """)
@@ -90,7 +93,6 @@ def findExternals(repo_names, search_path):
 def findBoostDirs(baseEnv):
     'Verify the Boost include and lib dirs'
     boost_prefix = baseEnv.subst('$boost_prefix')
-    print boost_prefix
     boost_incdir = None
     for incdir in (os.path.join(boost_prefix, 'include'),
                    boost_prefix):
@@ -310,8 +312,9 @@ for d in dirs:
 
 
 # include apbridge_pkg
+build_dir = os.path.join(env['BUILD_DIR'], 'pkg')
 SConscript('SConscript.pkg',
-           variant_dir = 'pkg',
+           variant_dir = build_dir,
            duplicate = 0,
            exports = {"env": env})
                

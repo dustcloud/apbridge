@@ -7,54 +7,59 @@ import fnmatch
 import shutil
 
 # shutil.copytree requires dest does not exist
-def copy_and_overwrite(from_path, to_path):
+def copy_action(from_path, to_path):
     if os.path.exists(to_path):
         shutil.rmtree(to_path)
     shutil.copytree(from_path, to_path)
+
+if env['PLATFORM'] in ('i686-linux',):
+    env['PKG_ARCH'] = 'i386'
+elif env['PLATFORM'] in ('armpi-linux',):
+    env['PKG_ARCH'] = 'armhf'
+else:
+    raise SCons.Errors.UserError('unknown target platform: ' + env['PLATFORM'])
 
 env.Replace(
     PKG_NAME       = 'dust-apbridge',
     PKG_ROOT       = 'pkg',
     # BUILD_DIR is set in the root SConstruct
-    PKG_BASE       = '$BUILD_DIR/${PKG_NAME}-pkg',
+    PKG_BASE       = Dir('#').abspath + '/$BUILD_DIR/${PKG_NAME}-pkg',
+    DEB_DIR        = Dir('#').abspath + '/$BUILD_DIR/',
     INSTALL_HOME   = '/opt/dust-apc',
 
-    # Versioning
-    VERSION_ENVVAR = 'APC_VERSION',
-    VERSION_SUFFIX = 'dev', 
-    VERSION_MODULE = 'apc_pkg_version',
-    VERSION_ATTR   = 'VERSION',
+    # TODO: read version from file
+    PKG_VERSION_STR = '1.0.1.4',
 )
-
-print "pkg_base is " + env.subst(env['PKG_BASE'])
 
 # Package layout for apbridge_pkg
 APC_BINARIES = ['apc']
 APC_PKG_MAP = {
-    '.'   : ['apc/env.sh'],
+    '.'   : ['pkg/env.sh'],
     'bin' : [
         'gen/${PLATFORM}-g/APInterface/apc',
-        'apc/apcctl', 
-        'apc/update-apc-config.py',
+        'pkg/apcctl', 
+        'pkg/update-apc-config.py',
         'python/bin/apc_console.py',
     ],
     'lib' : [],
     'etc/supervisor.conf.d' : [
-        'apc/supervisor.conf.d/apc-prog.conf.template', 
+        'pkg/supervisor.conf.d/apc-prog.conf.template', 
     ],
     'etc/stunnel': [
-        'apc/apc_stunnel.conf.template',
+        'pkg/apc_stunnel.conf.template',
     ],
     'etc/udev.rules.d': [
-        'apc/udev.rules.d/88-dust-usbs.rules',
+        'pkg/udev.rules.d/88-dust-usbs.rules',
     ],
     'conf': [
-        'apc/apc.conf.template',
+        'pkg/apc.conf.template',
     ],
 }
 
 # ----------------------------------------------------------------------
 # Build the APC package
+
+print "cwd is " + os.getcwd()
 
 apc_package_files = []
 for dest_dir, targets in APC_PKG_MAP.items():
@@ -65,25 +70,28 @@ for dest_dir, targets in APC_PKG_MAP.items():
 # copy the python lib directory
 src = os.path.join(Dir('#').abspath,'python', 'lib')
 dst = env.subst(os.path.join(env['PKG_BASE'], 'lib'))
-print "dst " + dst
-copy_and_overwrite(src, dst)
+copy_python_lib = env.Command(Dir(dst), Dir(src),
+                                copy_action)
+AlwaysBuild(copy_python_lib)
+
 
 # note: the fpm command is one long string, it's broken into lines for readability
 # python concatenates strings from multiple lines
-apc_pkg_path = '${BUILD_DIR}/${PKG_NAME}.deb'
+#apc_pkg_path = '../${BUILD_DIR}/${PKG_NAME}.deb'
+apc_pkg_path = '${DEB_DIR}/${PKG_NAME}_${PKG_VERSION_STR}.deb'
 apbridge_pkg = env.Command(apc_pkg_path, apc_package_files,
                           ['fpm -t deb -s dir --prefix $INSTALL_HOME '
                            '-n $PKG_NAME -v $PKG_VERSION_STR -a $PKG_ARCH '
                            '--description "VManager AP Bridge" '
-                           '--after-install pkg/apc/postinst '
-                           '--deb-config ${PKG_ROOT}/apc/dust-apc.config '
-                           '--deb-templates ${PKG_ROOT}//apc/dust-apc.templates '
+                           '--after-install pkg/postinst '
+                           '--deb-config ${PKG_ROOT}/dust-apc.config '
+                           '--deb-templates ${PKG_ROOT}/dust-apc.templates '
                            '--vendor "Dust Networks, Linear Technology" '
                            '-d supervisor '
                            '-d stunnel4 '
                            '-d python-psutil '
                            '-m "Dust Networks <dusters@linear.com>" '
-                           '-p $TARGET -C ${PKG_ROOT}/$PKG_BASE .',
+                           '-p $TARGET -C $PKG_BASE .',
                            #'(cd $BUILD_DIR ; ln -sf $BUILD_DIR + $TARGET.file ${PKG_NAME}_latest.deb)',
                           ])
 AlwaysBuild(apbridge_pkg)
