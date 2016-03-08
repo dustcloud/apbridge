@@ -1,0 +1,6 @@
+# APC configuration for {apc_client_id}
+host={manager_host}
+port=9100
+api-device={api_device}
+reset-device={reset_device}
+log-file={apc_client_id}.log

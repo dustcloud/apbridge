@@ -1,0 +1,8 @@
+# To debug stunnel issues, uncomment below two lines
+# debug = 7
+# output = /etc/stunnel/stunnel.log
+
+[tcp]
+client  = yes
+accept  = 9100
+connect = {manager_host}:9101

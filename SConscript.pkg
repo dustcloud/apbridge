@@ -1,0 +1,90 @@
+# APBridge packaging script
+
+Import ('env')
+
+import os
+import fnmatch
+import shutil
+
+# shutil.copytree requires dest does not exist
+def copy_and_overwrite(from_path, to_path):
+    if os.path.exists(to_path):
+        shutil.rmtree(to_path)
+    shutil.copytree(from_path, to_path)
+
+env.Replace(
+    PKG_NAME       = 'dust-apbridge',
+    PKG_ROOT       = 'pkg',
+    # BUILD_DIR is set in the root SConstruct
+    PKG_BASE       = '$BUILD_DIR/${PKG_NAME}-pkg',
+    INSTALL_HOME   = '/opt/dust-apc',
+
+    # Versioning
+    VERSION_ENVVAR = 'APC_VERSION',
+    VERSION_SUFFIX = 'dev', 
+    VERSION_MODULE = 'apc_pkg_version',
+    VERSION_ATTR   = 'VERSION',
+)
+
+print "pkg_base is " + env.subst(env['PKG_BASE'])
+
+# Package layout for apbridge_pkg
+APC_BINARIES = ['apc']
+APC_PKG_MAP = {
+    '.'   : ['apc/env.sh'],
+    'bin' : [
+        'gen/${PLATFORM}-g/APInterface/apc',
+        'apc/apcctl', 
+        'apc/update-apc-config.py',
+        'python/bin/apc_console.py',
+    ],
+    'lib' : [],
+    'etc/supervisor.conf.d' : [
+        'apc/supervisor.conf.d/apc-prog.conf.template', 
+    ],
+    'etc/stunnel': [
+        'apc/apc_stunnel.conf.template',
+    ],
+    'etc/udev.rules.d': [
+        'apc/udev.rules.d/88-dust-usbs.rules',
+    ],
+    'conf': [
+        'apc/apc.conf.template',
+    ],
+}
+
+# ----------------------------------------------------------------------
+# Build the APC package
+
+apc_package_files = []
+for dest_dir, targets in APC_PKG_MAP.items():
+    for tgt in targets:
+        full_dir = os.path.join(env['PKG_BASE'], dest_dir)
+        apc_package_files += env.Install(full_dir, tgt)
+
+# copy the python lib directory
+src = os.path.join(Dir('#').abspath,'python', 'lib')
+dst = env.subst(os.path.join(env['PKG_BASE'], 'lib'))
+print "dst " + dst
+copy_and_overwrite(src, dst)
+
+# note: the fpm command is one long string, it's broken into lines for readability
+# python concatenates strings from multiple lines
+apc_pkg_path = '${BUILD_DIR}/${PKG_NAME}.deb'
+apbridge_pkg = env.Command(apc_pkg_path, apc_package_files,
+                          ['fpm -t deb -s dir --prefix $INSTALL_HOME '
+                           '-n $PKG_NAME -v $PKG_VERSION_STR -a $PKG_ARCH '
+                           '--description "VManager AP Bridge" '
+                           '--after-install pkg/apc/postinst '
+                           '--deb-config ${PKG_ROOT}/apc/dust-apc.config '
+                           '--deb-templates ${PKG_ROOT}//apc/dust-apc.templates '
+                           '--vendor "Dust Networks, Linear Technology" '
+                           '-d supervisor '
+                           '-d stunnel4 '
+                           '-d python-psutil '
+                           '-m "Dust Networks <dusters@linear.com>" '
+                           '-p $TARGET -C ${PKG_ROOT}/$PKG_BASE .',
+                           #'(cd $BUILD_DIR ; ln -sf $BUILD_DIR + $TARGET.file ${PKG_NAME}_latest.deb)',
+                          ])
+AlwaysBuild(apbridge_pkg)
+Alias('apbridge_pkg', apbridge_pkg)
