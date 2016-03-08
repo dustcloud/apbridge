@@ -30,8 +30,9 @@ command_line_vars.AddVariables(
     ('boost_lib_suffix', "Suffix for the Boost libraries", ''),
     ('python',
      '''Path to python. Defaults to \Python27 on Windows, /usr/bin/python on Linux.''', 'python'),
-    ('target', 'target platform', 'i686'),
     ('publish_dir', 'Directory for publishing released artifacts', ''),
+    EnumVariable('target', 'Choose target platform', 'i686',
+                                 allowed_values=('i686', 'x86_64', 'armpi')),
 )
 
 # for SCons to find the right compiler on Windows, TARGET_ARCH must be set 
@@ -43,11 +44,12 @@ if str(baseEnv['user_path']) == '1':
 
 # Setup the default Help message
 Help("""
-Build components:
+To build apbridge:
  
- $ scons apbridge     # build the AP Bridge
+ $ scons apbridge                 # build the AP Bridge for i686
+ $ scons apbridge target=armpi    # build the AP Bridge for armpi
 
-Options:
+Options for building:
 """)
 
 # Append descriptions for the command line options
@@ -88,8 +90,8 @@ def findExternals(repo_names, search_path):
 def findBoostDirs(baseEnv):
     'Verify the Boost include and lib dirs'
     boost_prefix = baseEnv.subst('$boost_prefix')
-    boost_incdir = None
     print boost_prefix
+    boost_incdir = None
     for incdir in (os.path.join(boost_prefix, 'include'),
                    boost_prefix):
         if os.path.exists(os.path.join(incdir, 'boost', 'version.hpp')):
@@ -226,15 +228,14 @@ if platform.system() in 'Linux':
 
     env = getLinuxEnv(baseEnv)
 
-    if env['target'] in ('armpi',):
+    if env['target'] == 'armpi':
         get_raspi2_platform(env)
-    elif env['target'] in ('i686',):
+    elif env['target'] == 'i686':
         get_i686_platform(env)
-    elif env['target'] in ('x86_64',):
+    elif env['target'] == 'x86_64':
         get_x86_64_platform(env)
     else: 
-        raise UserError('Unknown target architecture, supported are i686, x86_64 and armpi')
-    
+        raise UserError('Unknown target architecture')
 else:
     print 'Unknown platform:', platform.system()
     Exit(1)
@@ -307,6 +308,12 @@ for d in dirs:
                duplicate = 0,
                exports = {"env": env})
 
+
+# include apbridge_pkg
+SConscript('SConscript.pkg',
+           variant_dir = 'pkg',
+           duplicate = 0,
+           exports = {"env": env})
                
 # don't use variant BUILD_DIR with python
 SConscript(os.path.join('python', 'SConscript.apc'),
