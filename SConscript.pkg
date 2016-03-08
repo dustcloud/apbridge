@@ -7,10 +7,12 @@ import fnmatch
 import shutil
 
 # shutil.copytree requires dest does not exist
-def copy_action(from_path, to_path):
-    if os.path.exists(to_path):
-        shutil.rmtree(to_path)
-    shutil.copytree(from_path, to_path)
+def copy_action(target, source, env):
+    tgt = str(target[0])
+    src = str(source[0])
+    if os.path.exists(tgt):
+        shutil.rmtree(tgt)
+    shutil.copytree(src, tgt)
 
 if env['PLATFORM'] in ('i686-linux',):
     env['PKG_ARCH'] = 'i386'
@@ -23,8 +25,7 @@ env.Replace(
     PKG_NAME       = 'dust-apbridge',
     PKG_ROOT       = 'pkg',
     # BUILD_DIR is set in the root SConstruct
-    PKG_BASE       = Dir('#').abspath + '/$BUILD_DIR/${PKG_NAME}-pkg',
-    DEB_DIR        = Dir('#').abspath + '/$BUILD_DIR/',
+    PKG_BASE       = '${PKG_NAME}-pkg',
     INSTALL_HOME   = '/opt/dust-apc',
 
     # TODO: read version from file
@@ -59,8 +60,6 @@ APC_PKG_MAP = {
 # ----------------------------------------------------------------------
 # Build the APC package
 
-print "cwd is " + os.getcwd()
-
 apc_package_files = []
 for dest_dir, targets in APC_PKG_MAP.items():
     for tgt in targets:
@@ -70,15 +69,15 @@ for dest_dir, targets in APC_PKG_MAP.items():
 # copy the python lib directory
 src = os.path.join(Dir('#').abspath,'python', 'lib')
 dst = env.subst(os.path.join(env['PKG_BASE'], 'lib'))
-copy_python_lib = env.Command(Dir(dst), Dir(src),
+
+copy_python_lib = env.Command(dst, src,
                                 copy_action)
 AlwaysBuild(copy_python_lib)
-
+apc_package_files += copy_python_lib
 
 # note: the fpm command is one long string, it's broken into lines for readability
 # python concatenates strings from multiple lines
-#apc_pkg_path = '../${BUILD_DIR}/${PKG_NAME}.deb'
-apc_pkg_path = '${DEB_DIR}/${PKG_NAME}_${PKG_VERSION_STR}.deb'
+apc_pkg_path = '${PKG_NAME}_${PKG_VERSION_STR}.deb'
 apbridge_pkg = env.Command(apc_pkg_path, apc_package_files,
                           ['fpm -t deb -s dir --prefix $INSTALL_HOME '
                            '-n $PKG_NAME -v $PKG_VERSION_STR -a $PKG_ARCH '
@@ -91,7 +90,7 @@ apbridge_pkg = env.Command(apc_pkg_path, apc_package_files,
                            '-d stunnel4 '
                            '-d python-psutil '
                            '-m "Dust Networks <dusters@linear.com>" '
-                           '-p $TARGET -C $PKG_BASE .',
+                           '-p $TARGET -C $BUILD_DIR/$PKG_BASE .',
                            #'(cd $BUILD_DIR ; ln -sf $BUILD_DIR + $TARGET.file ${PKG_NAME}_latest.deb)',
                           ])
 AlwaysBuild(apbridge_pkg)

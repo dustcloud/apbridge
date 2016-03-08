@@ -312,7 +312,7 @@ for d in dirs:
 
 
 # include apbridge_pkg
-build_dir = os.path.join(env['BUILD_DIR'], 'pkg')
+build_dir = os.path.join(env['BUILD_DIR'])
 SConscript('SConscript.pkg',
            variant_dir = build_dir,
            duplicate = 0,
