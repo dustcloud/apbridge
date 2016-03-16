@@ -31,6 +31,7 @@ command_line_vars.AddVariables(
     ('python',
      '''Path to python. Defaults to \Python27 on Windows, /usr/bin/python on Linux.''', 'python'),
     ('publish_dir', 'Directory for publishing released artifacts', ''),
+    ('repository_dir', "Directory to store the .deb file", '/mnt/sdev/repo_scripts'),
     EnumVariable('target', 'Choose target platform', 'i686',
                                  allowed_values=('i686', 'x86_64', 'armpi')),
 )
@@ -311,17 +312,17 @@ for d in dirs:
                exports = {"env": env})
 
 
-# include apbridge_pkg
-build_dir = os.path.join(env['BUILD_DIR'])
-SConscript('SConscript.pkg',
-           variant_dir = build_dir,
-           duplicate = 0,
-           exports = {"env": env})
-               
 # don't use variant BUILD_DIR with python
 SConscript(os.path.join('python', 'SConscript.apc'),
            exports = {"env": env})
 
+# include apbridge_pkg
+build_dir = os.path.join(env['BUILD_DIR'])
+SConscript('SConscript.pkg',
+           variant_dir = os.path.join(env['BUILD_DIR'], 'pkg'),
+           duplicate = 0,
+           exports = {"env": env})
+           
 # include SConscript.release last
 #SConscript('SConscript.release',
 #           variant_dir = os.path.join(env['BUILD_DIR'], 'release'),

@@ -6,6 +6,56 @@ import os
 import fnmatch
 import shutil
 
+DEFAULT_RELEASE_PUBLISH_DIR = '/mnt/engineering/'
+
+# ----------------------------------------------------------------------
+# Calculate package version
+#
+# The current version is stored in a local file. If a specific environment
+# variable is set, value from the environment overwrites the version. This
+# allows the release operation to specify a new version.
+
+import VersionStandalone
+
+# Add the package version to the environment (for each environment).
+# It reads the version from python version file, also can be overrided by
+# OS environment variable APC_VERSION
+
+def generate_pkg_version(env, pkg_name, version_file=None):
+    'Generate the package version from the version file or an env variable'
+    # uses env variables:
+    # - VERSION_MODULE, VERSION_ATTR
+    # - VERSION_ENVVAR - set the version from an environment variable
+    # - VERSION_SUFFIX - string to append to the version
+    # - PKG_VERSION_STR - [output] package version (as a string)
+    # - dry_run
+    
+    if not version_file:
+        version_file = File('#' + env['VERSION_MODULE'] + '.py').abspath
+    # Read the current version from the version file
+    version_obj = VersionStandalone.generate_pyversion(env, 
+                                                       env['VERSION_MODULE'],
+                                                       version_file,
+                                                       env['VERSION_ATTR'],
+                                                       alias_prefix = pkg_name)
+    # Check the environment for an override
+    var_name = env['VERSION_ENVVAR']
+    if os.environ.has_key(var_name):
+        sep = '.' # TODO: read separator from environment
+        new_version = [int(v) for v in os.environ[var_name].split(sep)]
+        version_obj.set_current_version(major=new_version[0],
+                                        minor=new_version[1],
+                                        release=new_version[2],
+                                        build=new_version[3],
+                                        dry_run=bool(env['dry_run']))
+        # when we read from the environment, we don't use the local suffix
+        env['VERSION_SUFFIX'] = ''
+    
+    # set the package version
+    env['PKG_VERSION_STR'] = version_obj.get_version_str('.')
+    print 'Package:', pkg_name, 'Version:', env['PKG_VERSION_STR']
+
+
 # shutil.copytree requires dest does not exist
 def copy_action(target, source, env):
     tgt = str(target[0])
@@ -21,6 +71,9 @@ elif env['PLATFORM'] in ('armpi-linux',):
 else:
     raise SCons.Errors.UserError('unknown target platform: ' + env['PLATFORM'])
 
+if not env['publish_dir'] :
+    env['publish_dir'] = DEFAULT_RELEASE_PUBLISH_DIR
+
 env.Replace(
     PKG_NAME       = 'dust-apbridge',
     PKG_ROOT       = 'pkg',
@@ -28,16 +81,24 @@ env.Replace(
     PKG_BASE       = '${PKG_NAME}-pkg',
     INSTALL_HOME   = '/opt/dust-apc',
 
-    # TODO: read version from file
-    PKG_VERSION_STR = '1.0.1.4',
+    # Versioning
+    VERSION_ENVVAR = 'APC_VERSION',
+    VERSION_SUFFIX = 'env', 
+    VERSION_MODULE = 'apbridge_pkg_version',
+    VERSION_ATTR   = 'VERSION',
+
+    # publish
+    publish_dir = os.path.join(env['publish_dir'], 'Software', 'Builds', 'Voyager'),
 )
+
+generate_pkg_version(env, env['PKG_NAME'])
 
 # Package layout for apbridge_pkg
 APC_BINARIES = ['apc']
 APC_PKG_MAP = {
     '.'   : ['pkg/env.sh'],
     'bin' : [
-        'gen/${PLATFORM}-g/APInterface/apc',
+        env['DIST_TARGETS']['apbridge'],
         'pkg/apcctl', 
         'pkg/update-apc-config.py',
         'python/bin/apc_console.py',
@@ -60,38 +121,76 @@ APC_PKG_MAP = {
 # ----------------------------------------------------------------------
 # Build the APC package
 
+dry_run = env.has_key('dry_run') and int(env['dry_run'])
+
 apc_package_files = []
 for dest_dir, targets in APC_PKG_MAP.items():
     for tgt in targets:
         full_dir = os.path.join(env['PKG_BASE'], dest_dir)
-        apc_package_files += env.Install(full_dir, tgt)
+        if not dry_run:
+            apc_package_files += env.Install(full_dir, tgt)
+        else:
+            print 'DRY RUN: Install %s to %s' % (env.subst(tgt), dest_dir)
 
 # copy the python lib directory
 src = os.path.join(Dir('#').abspath,'python', 'lib')
 dst = env.subst(os.path.join(env['PKG_BASE'], 'lib'))
-
-copy_python_lib = env.Command(dst, src,
-                                copy_action)
+copy_python_lib = env.Command(dst, src, copy_action)
 AlwaysBuild(copy_python_lib)
-apc_package_files += copy_python_lib
+
+if not dry_run:
+	apc_package_files += copy_python_lib
+else:
+    print 'DRY RUN: Copy %s to %s' % (src, dst)
 
 # note: the fpm command is one long string, it's broken into lines for readability
 # python concatenates strings from multiple lines
 apc_pkg_path = '${PKG_NAME}_${PKG_VERSION_STR}.deb'
+
 apbridge_pkg = env.Command(apc_pkg_path, apc_package_files,
-                          ['fpm -t deb -s dir --prefix $INSTALL_HOME '
-                           '-n $PKG_NAME -v $PKG_VERSION_STR -a $PKG_ARCH '
-                           '--description "VManager AP Bridge" '
-                           '--after-install pkg/postinst '
-                           '--deb-config ${PKG_ROOT}/dust-apc.config '
-                           '--deb-templates ${PKG_ROOT}/dust-apc.templates '
-                           '--vendor "Dust Networks, Linear Technology" '
-                           '-d supervisor '
-                           '-d stunnel4 '
-                           '-d python-psutil '
-                           '-m "Dust Networks <dusters@linear.com>" '
-                           '-p $TARGET -C $BUILD_DIR/$PKG_BASE .',
-                           #'(cd $BUILD_DIR ; ln -sf $BUILD_DIR + $TARGET.file ${PKG_NAME}_latest.deb)',
-                          ])
+					  ['fpm -t deb -s dir --prefix $INSTALL_HOME '
+					   '-n $PKG_NAME -v $PKG_VERSION_STR -a $PKG_ARCH '
+					   '--description "VManager AP Bridge" '
+					   '--after-install ${PKG_ROOT}/postinst '
+					   '--deb-config ${PKG_ROOT}/dust-apc.config '
+					   '--deb-templates ${PKG_ROOT}/dust-apc.templates '
+					   '--vendor "Dust Networks, Linear Technology" '
+					   '-d supervisor '
+					   '-d stunnel4 '
+					   '-d python-psutil '
+					   '-m "Dust Networks <dusters@linear.com>" '
+					   '-p $TARGET -C $BUILD_DIR/$PKG_BASE .',
+					   '(cd $BUILD_DIR/${PKG_ROOT}; ln -sf $TARGET.file ${PKG_NAME}_latest.deb)',
+					  ])
+
 AlwaysBuild(apbridge_pkg)
 Alias('apbridge_pkg', apbridge_pkg)
+
+# ----------------------------------------------------------------------
+# Release targets
+
+import PublisherStandalone
+
+PACKAGE_TARGETS = {
+    # the package name maps to a tuple of: the version file, the package target(s)
+    'apbridge':     (File('#' + 'apbridge_pkg_version.py'),
+                     apbridge_pkg),
+}
+
+for component_name, component_files in PACKAGE_TARGETS.items():
+    RELEASE_OPTIONS = {
+        'version_file': component_files[0].abspath,
+        'version_module': component_name + '_pkg_version',
+        'version_attr': env['VERSION_ATTR'],
+        'svn_project_path': 'manager_project',
+        'svn_label_prefix': component_name + '_pkg_release',
+        'git_binary': 'git',
+        'release_artifacts': component_files[1],
+        'release_dest_dir': os.path.join(env['publish_dir'], 'packages', env['PLATFORM']),
+        'release_use_versioned_dest': component_name + '-pkg', # versioned dest dir
+        'release_append_version': False, # package file already named with version
+        'repository_dir' : os.path.join(env['repository_dir'], 'INCOMING'),
+        'alias_prefix': component_name,
+    }
+    PublisherStandalone.generate_release(env, **RELEASE_OPTIONS)
+
