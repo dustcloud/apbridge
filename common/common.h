@@ -98,7 +98,7 @@ std::string dumpToString(const uint8_t * data, uint32_t len, char d = '-');
 #define MAC_LENGTH 8
 typedef uint16_t moteid_t;
 typedef uint8_t  macaddr_t[MAC_LENGTH];
-std::string macToString(const macaddr_t& mac) { return dumpToString(mac, sizeof(macaddr_t)); }
+std::string macToString(const macaddr_t& mac);
 
 const   moteid_t   MOTEID_EMPTY     = 0;
 const   moteid_t   MOTEID_BROADCAST = 0xFFFF;

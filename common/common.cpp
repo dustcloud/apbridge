@@ -357,3 +357,8 @@ std::string base64Encoder(std::string data)
    base64.append(numPaddingChars, BASE64_PAD);
    return base64;
 }
+
+std::string macToString(const macaddr_t& mac) { 
+   return dumpToString(mac, sizeof(macaddr_t)); 
+}
+
