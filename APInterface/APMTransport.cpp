@@ -541,11 +541,13 @@ void CAPMTransport::handleRetryTimeout(const boost::system::error_code& error)
       m_curRetryCount++;
       startRetryTimer();
    } else {
-      DUSTLOG_ERROR(APM_IO_LOGGER,"No response after " << m_init_params.maxRetries << " retries. AP is lost, resetting.");
+      DUSTLOG_ERROR(APM_IO_LOGGER,"No response after " << m_init_params.maxRetries << " retries. AP is lost, reset AP.");
       //AP is lost so no point of keep on pinging
       stopPingTimer();
       //Send AP Lost to manager
       sendAPLostNotif_p();
+      //Hardware reset AP
+      hwResetAP();
 
       // if reconnect-serial is enabled, we restart APC after maxRetries.
 	  if (m_reconnectSerial) {
