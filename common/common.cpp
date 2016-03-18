@@ -113,6 +113,19 @@ std::string toStringISO(const sys_time_t& utc)
    return os.str();
 }
 
+std::string toStringElapsed(const msec_t& msec)
+{
+   CFmtString buf;
+   uint32_t d, h, m, s, ms;
+   s  = (uint32_t)(msec.count() / 1000);
+   ms = (uint32_t)(msec.count() % 1000);
+   m  = s / 60; s %= 60;
+   h  = m / 60; m %= 60;
+   d  = h / 24; h %= 24;
+   buf.printf("%d-%02d:%02d:%02d.%03d", d, h, m, s, ms);
+   return buf.str();
+}
+
 // Convert HEX char to binary
 uint8_t hexCh2bin(const char ch)
 {

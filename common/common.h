@@ -61,6 +61,7 @@ std::ostream& operator << (std::ostream& os, const sys_time_t& utc);
 std::string toString(const mngr_time_t& time);
 std::string toString(const sys_time_t& time);
 std::string toStringISO(const sys_time_t& utc);
+std::string toStringElapsed(const msec_t& msec);
 
 // Monitor task IDs
 typedef uint32_t monitorid_t;

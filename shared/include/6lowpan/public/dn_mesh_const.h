@@ -37,3 +37,7 @@ const dn_macaddr_t DN_BCAST_LONG_ADDR = {
 const dn_macaddr_t DN_ZERO_LONG_ADDR = {0};
 
 const dn_asn_t DN_ZERO_ASN = {{0}};
+
+const INT8U DN_DUST_MAC_PREFIX[] = {
+   0x00, 0x17, 0x0D
+};
