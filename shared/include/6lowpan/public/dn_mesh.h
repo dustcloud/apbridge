@@ -24,6 +24,8 @@ Copyright (c) 2010, Dust Networks.  All rights reserved.
 #define DN_MACADDR_SIZE                      8
 #define DN_MESH_LONG_ADDR_SIZE               DN_MACADDR_SIZE
 
+#define DN_MACADDR_PREFIX_SIZE               3
+
 // size of Serial Number
 #define DN_SERNUM_SIZE                       8
 
@@ -97,6 +99,9 @@ typedef INT16U dn_netid_t;
 // mote id
 typedef INT16U dn_moteid_t;
 
+// MAC prefix
+typedef INT8U  dn_macprefix_t[DN_MACADDR_PREFIX_SIZE];
+
 extern const dn_ipv6_addr_t DN_MOTE_IPV6_BCAST_ADDR;
 extern const dn_ipv6_addr_t DN_MGR_IPV6_MULTICAST_ADDR;
 extern const dn_ipv6_addr_t DN_IPV6_LOCALHOST_ADDR;
@@ -104,6 +109,7 @@ extern const dn_macaddr_t DN_MGR_LONG_ADDR;
 extern const dn_macaddr_t DN_BCAST_LONG_ADDR;
 extern const dn_macaddr_t DN_ZERO_LONG_ADDR;
 extern const dn_asn_t DN_ZERO_ASN;
+extern const dn_macprefix_t DN_DUST_MAC_PREFIX;
 
 PACKED_STOP
 
