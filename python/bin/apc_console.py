@@ -159,14 +159,14 @@ class CommandLineHandler(cmd.Cmd):
           (rc, ) = struct.unpack("!L", resp[1])
           if not rc:
              logger_resp = logevent_pb2.GetLogLevelResponse.FromString(resp[2])
-             sys.stdout.write('Logger: {0}, rc={1}, level={2}\n'.format(
+             sys.stdout.write('Logger: {0}, rc: {1}, level={2}\n'.format(
                                                                   arg_str,
                                                                   rc,
-                                                                  logger_resp.logLevel
+                                                                  logger_resp.__str__(),
                                                                   ))
           else:
-             sys.stdout.write('Logger: {0}, rc={1}\n'.format(arg_str,
-                                                             rc))
+             sys.stdout.write('Logger: {0}, rc: {1}\n'.format(arg_str,
+                                                             Enum_RpcResult.to_string(rc)))
        else:
           try:
              (rc, loggers) = self.getAllLoggers()
