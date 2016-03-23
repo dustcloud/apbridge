@@ -59,6 +59,28 @@ APC_CLIENT_NAME  = 'apcClient'
 # disable CTRL_C in console
 signal.signal(signal.SIGINT, signal.SIG_IGN)
 
+
+class NoSecLogConsole(LogConsole):
+    '''Implements the non secure logger listener
+    '''
+    def __init__(self, ctx, logger_name, logger_addr, rpcClient, 
+                 loglevel_filter = logevent_pb2.L_FATAL):
+        LogConsole.__init__(self, ctx, logger_name, logger_addr, rpcClient, 
+                 loglevel_filter = logevent_pb2.L_FATAL)
+
+    def loadNotifTypes(self):
+       '''Get all loggers
+       '''
+       #print "loading loggers"
+       try :
+           resp = self.rpcClient.send_msg(logevent_pb2.GET_LOGGERS, 
+                                        '',
+                                        logevent_pb2.GetLoggersResponse, 
+                                        service='logger')
+           self.loggers = list(resp.loggers)
+       except Exception as exc:
+           print exc 
+
 class CommandLineHandler(cmd.Cmd):
     '''Voyager Console command line handler
     '''
@@ -616,7 +638,7 @@ def main(argv):
     rpcClientsDic = {APC_CLIENT_NAME: apc }
 
     # Notification listeners
-    log_console = LogConsole(ctx, "logListener", APC_LOG_ENDPOINT,
+    log_console = NoSecLogConsole(ctx, "logListener", APC_LOG_ENDPOINT,
                              rpcClientsDic[APC_CLIENT_NAME])
     listenersDic = {'logListener': log_console }
 
