@@ -199,12 +199,21 @@ class CommandLineHandler(cmd.Cmd):
              sys.stdout.write('Loggers: {0}\n'.format(', '.join(loggers)))
 
     def do_quit(self, *args):
+       '''Usage: quit
+       Exit console.
+       '''
        return True
 
     def do_exit(self, *args):
+       '''Usage: exit
+       Exit console.
+       '''
        return True
 
     def do_logout(self, *args):
+       '''Usage: logout
+       Exit console.
+       '''
        try:
           self.quitApp()
        except Exception as e:
@@ -212,12 +221,18 @@ class CommandLineHandler(cmd.Cmd):
        return True
 
     def do_clear(self, *args):
+       '''Usage: clear
+       Clear screen.
+       '''
        if platform.system() == 'Windows':
           subprocess.call("cls", shell=True)
        else:
           subprocess.call("clear", shell=True)
 
     def do_version(self, *args):
+       '''Usage: version
+       Show version of APBridge console.
+       '''
        printInfo(CONSOLE_VERSION)
 
     def emptyline(self):
@@ -438,6 +453,9 @@ class CommandLineHandler(cmd.Cmd):
        return
      
     def do_help(self, iArgs):
+       '''Usage: help
+       List all supported commands.
+       '''
        cmd.Cmd.do_help(self, iArgs)
        return
    
