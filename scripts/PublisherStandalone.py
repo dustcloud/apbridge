@@ -107,6 +107,7 @@ def generate_release(env, version_module = '', version_file = '', build_file = '
     # generate the Version object
     if version_module:
         version_obj = generate_pyversion(env, version_module, version_file, 
+                                         build_file,
                                          version_attr, alias_prefix = alias_prefix)
     elif build_file:
         version_obj = generate_cversion(env, version_file, build_file,
