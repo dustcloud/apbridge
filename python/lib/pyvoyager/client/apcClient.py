@@ -34,11 +34,10 @@ APParameters = {
    #  parameterId and control flag
    'macaddr'           : (0x01, ('get', 'set')),
    'joinkey'           : (0x02, ('set')),
-   'networkid'         : (0x03, ('get', 'set')),
+   'networkid'         : (0x03, ('get')),
    'txpower'           : (0x04, ('get', 'set')),
    'apinfo'            : (0x0C, ('get')),
    'time'              : (0x0F, ('get')),
-   'testradiorxstats'  : (0x11, ('get')),
    'appInfo'           : (0x1E, ('get')),
    'apclksource'       : (0x26, ('get', 'set')),
    'apstatus'          : (0x28, ('get')),
@@ -137,12 +136,6 @@ def presentTime(timeInfo):
     out += "ASN        : " + str(int(asn.encode("hex"), 16)) + "\n"
     out += "ASN Offset : " + str(asnOffset)
     return out
-
-def presentTestRadioRxStats(radioStats):
-   rxOk, rxFailed = struct.unpack('!HH', radioStats)
-   out = "Num Packets Rx Ok      : " + str(rxOk) + "\n"
-   out+= "Num Packets Rx Failed  : " + str(rxFailed)
-   return out
 
 def getAppVersion(appVer):
    major, minor, patch, build = struct.unpack('!BBHB', appVer)
@@ -289,8 +282,6 @@ class ApcClient(BaseRpcClient):
           val = presentAPInfo (payload)
        elif cmd == APParameters['time'][0]:
           val = presentTime(payload)
-       elif cmd == APParameters['testradiorxstats'][0]:
-          val = presentTestRadioRxStats(payload)
        elif cmd == APParameters['networkid'][0]:
           val = struct.unpack('!H', payload)[0]
        elif cmd == APParameters['txpower'][0]:

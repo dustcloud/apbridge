@@ -28,7 +28,7 @@ sys.path += [os.path.join(APC_LIB_PATH),
              os.path.join(APC_LIB_PATH, 'pyvoyager', 'proto'),
             ]
 
-from pyvoyager.apbridge_version import VERSION
+from pyvoyager.apc_console_version import VERSION
 from pyvoyager.listener.logconsole import LogConsole
 from pyvoyager.baserpcclient import RpcError
 from pyvoyager.baserpcclient import TimeoutError
@@ -275,7 +275,6 @@ class CommandLineHandler(cmd.Cmd):
                         [args] is a parameter followed by value
                                parameter are
                                    - macAddr
-                                   - networkId
                                    - txPower
                                    - joinKey
                                    - apClkSource
@@ -325,7 +324,6 @@ class CommandLineHandler(cmd.Cmd):
                                    - txPower
                                    - apInfo
                                    - time
-                                   - testRadioRxStats
                                    - apClkSource
                                    - apStatus
            apc       -- get APC parameters
