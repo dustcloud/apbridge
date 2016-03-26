@@ -22,6 +22,8 @@ struct ap_intf_stat_t
    uint16_t     maxAllocOutBuf;     ///< Maximum number of output buffers
    uint32_t     numReceivedPkt;     ///< Number of received packets
    statdelays_s sendStat;
+   uint32_t     numOffline;
+   uint32_t     numPause;
 };
 
 /**
