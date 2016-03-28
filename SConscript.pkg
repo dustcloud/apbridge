@@ -171,9 +171,8 @@ apbridge_pkg = env.Command(apc_pkg_path, apc_package_files,
                    '-d supervisor '
                    '-d stunnel4 '
                    '-d python-psutil '
-                   '-m "Dust Networks <dusters@linear.com>" '
                    '-p $TARGET -C $BUILD_DIR/${PKG_ROOT}/$PKG_BASE .',
-                   #'(cd $BUILD_DIR/${PKG_ROOT}; ln -sf $TARGET.file ${PKG_NAME}_latest.deb)',
+                   '(cd $BUILD_DIR/${PKG_ROOT}; ln -sf $TARGET.file ${PKG_NAME}_latest.deb)',
                   ])
 
 AlwaysBuild(apbridge_pkg)
