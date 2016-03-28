@@ -72,25 +72,6 @@ except:
 # ----------------------------------------------------------------------
 # Platform environment setup
 
-# Find "external" repositories: shared
-
-EXTERNAL_REPO_SEARCH_PATH = ['.', '..']
-
-def findExternals(repo_names, search_path):
-    '''Find external repositories (by directory name)
-    Returns: a dict of the path to each external repository'''
-    external_repos = {}
-    for repo_name in repo_names:
-        for d in search_path:
-            repo_path = os.path.join(d, repo_name)
-            if os.path.isdir(repo_path):
-                external_repos[repo_name] = repo_path
-                break
-        else:
-            raise UserError('can not find external directory: {0}'.format(repo_name))
-    
-    return external_repos
-
 def findBoostDirs(baseEnv):
     'Verify the Boost include and lib dirs'
     boost_prefix = baseEnv.subst('$boost_prefix')
@@ -143,8 +124,6 @@ TOOL_LIBS = [
 def getLinuxEnv(baseEnv):
     'Construct the Linux build environment'
     boost_incdir, boost_libdir = findBoostDirs(baseEnv)
-    baseEnv['externals'] = findExternals(['shared'], EXTERNAL_REPO_SEARCH_PATH)
-
     env = baseEnv.Clone(
         HOST_ARCH = platform.machine() + '-linux',
         TOOLS_DIR=baseEnv['tools_prefix'],
@@ -273,7 +252,7 @@ if not platform.system().startswith('Windows'):
 env['COMMON_LIBS'] = ['logger', 'rpccommon', 'common', ]
 env.Append(CPPPATH=['#', 
                     '#/common',
-                    os.path.join('#', env['externals']['shared'], 'include'),
+                    '#/shared/include',
                     os.path.join('#', env['BUILD_DIR']),
                     os.path.join('#', env['BUILD_DIR'], 'APInterface'),
                     os.path.join('#', env['BUILD_DIR'], 'logging'),
