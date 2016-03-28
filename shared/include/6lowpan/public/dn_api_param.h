@@ -1,6 +1,6 @@
 /*
-Copyright (c) 2010, Dust Networks.  All rights reserved.
-*/
+ * Copyright (c) 2010, Linear Technology. All rights reserved.
+ */
 
 #ifndef _DN_API_PARAM_H
 #define _DN_API_PARAM_H

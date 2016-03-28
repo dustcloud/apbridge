@@ -1,6 +1,6 @@
 /*
-Copyright (c) 2010, Dust Networks.  All rights reserved.
-*/
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
+ */
 
 /* !!! This file must be include to project only ONE time !!! */
 

@@ -1,6 +1,6 @@
 /*
-Copyright (c) 2010, Dust Networks.  All rights reserved.
-*/
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
+ */
 
 #ifndef __DN_PACK_H
 #define __DN_PACK_H

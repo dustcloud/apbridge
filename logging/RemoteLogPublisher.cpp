@@ -11,7 +11,7 @@
 
 using namespace zmqUtils;
 
-extern bool changeIPCFilePrivelege(const std::string& serverAddr, std::string * pError);
+extern bool changeIPCFilePrivilege(const std::string& serverAddr, std::string * pError);
 
 logevent::LogLevel convertLogLevel(const log4cxx::LevelPtr& aLevel)
 {
@@ -192,7 +192,7 @@ void RemoteLogger::queueThreadFun_p()
    zmq::socket_t*    socket = new zmq::socket_t(*m_ctx, ZMQ_PUB);
    socket->bind(m_remoteLogAddr.c_str());
    std::string errMsg;
-   changeIPCFilePrivelege(m_remoteLogAddr, &errMsg);
+   changeIPCFilePrivilege(m_remoteLogAddr, &errMsg);
 
    zmessage * pMsg;
    for(;;) {

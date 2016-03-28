@@ -1,6 +1,6 @@
 /*
-Copyright (c) 2010-2011, Dust Networks.  All rights reserved.
-*/
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
+ */
 
 #ifndef DN_TYPEDEF_H
 #define DN_TYPEDEF_H

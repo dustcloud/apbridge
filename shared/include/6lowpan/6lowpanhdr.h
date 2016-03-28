@@ -1,10 +1,5 @@
 /*
- * Copyright (c) 2009, Dust Networks.  All rights reserved.
- *
- * $HeadURL: https://svn/software/trunk/shared/include/6lowpan/6lowpanhdr.h $
- * $Rev: 64147 $
- * $Author: alushin $
- * $LastChangedDate: 2015-01-27 14:06:31 -0800 (Tue, 27 Jan 2015) $ 
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
  */
 
 #ifndef __6LOWPANHDR_H__

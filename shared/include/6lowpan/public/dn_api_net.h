@@ -1,10 +1,5 @@
 /*
- * Copyright (c) 2009, Dust Networks.  All rights reserved.
- *
- * $HeadURL: https://subversion/software/trunk/shared/include/6lowpan/dn_api_net.h $
- * $Rev: 42425 $
- * $Author: alushin $
- * $LastChangedDate: 2011-01-07 17:34:14 -0800 (Fri, 07 Jan 2011) $ 
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
  */
 
 #ifndef _DN_API_NET_H

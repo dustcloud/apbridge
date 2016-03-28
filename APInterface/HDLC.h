@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Dust Networks Inc. 
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
  */
 #pragma once
 

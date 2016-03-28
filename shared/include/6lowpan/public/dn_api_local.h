@@ -1,6 +1,6 @@
 /*
-Copyright (c) 2009, Dust Networks.  All rights reserved.
-*/
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
+ */
 
 #ifndef _DN_API_LOCAL_H
 #define _DN_API_LOCAL_H

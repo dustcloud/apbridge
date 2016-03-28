@@ -9,7 +9,7 @@
 #include "logging/LogWorker.h"
 #include "Logger.h"
 
-extern bool changeIPCFilePrivelege(const std::string& serverAddr, std::string * pError);
+extern bool changeIPCFilePrivilege(const std::string& serverAddr, std::string * pError);
 
 /**
  * RpcServer
@@ -22,9 +22,9 @@ RpcServer::RpcServer(zmq::context_t* context,
 {
    std::string errMsg;
    m_dispatch->bind(serverAddr);
-   if (!changeIPCFilePrivelege(serverAddr, & errMsg)) {
-      DUSTLOG_ERROR(rpclogger::RPC_SERVER_NAME, "Can not change privilege IPC address" 
-                   << serverAddr << " " << errMsg);
+   if (!changeIPCFilePrivilege(serverAddr, & errMsg)) {
+      DUSTLOG_ERROR(rpclogger::RPC_SERVER_NAME, "Can not change privilege of IPC address '" 
+                    << serverAddr << "': " << errMsg);
    }
    // create the log worker
    addWorker(new LogWorker(context, serverAddr, !m_dispatch->isAuthorizationCheck()), true);

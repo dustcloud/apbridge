@@ -55,11 +55,13 @@ env.Append(BUILDERS = {'EnumToStringPython' : enum_to_string_py_bld})
 
 # ----------------------------------------------------------------------
 # DN to string code generation
+
 DN_TO_STRING_SCRIPT = 'scripts/dnToStr.py'
 DN_TO_STRING_COM = '{0} {1} $SOURCE $TARGET'
-dnToStr = env.Command('lib/pyvoyager/enum/dn_to_str.py',
-            os.path.join('..', env['externals']['shared'], 'include', '6lowpan', 'public'),
-            DN_TO_STRING_COM.format(env['python'], DN_TO_STRING_SCRIPT))
+
+dnToStr = env.Command('lib/pyvoyager/enum/dn_to_str.py', 
+                      '#/shared/include/6lowpan/public',
+                      DN_TO_STRING_COM.format(env['python'], DN_TO_STRING_SCRIPT))
 
 # ----------------------------------------------------------------------
 # Generated files

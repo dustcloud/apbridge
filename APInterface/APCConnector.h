@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
+ */
+
 #pragma once
 #include "common.h"
 #include "StatDelaysCalc.h"
