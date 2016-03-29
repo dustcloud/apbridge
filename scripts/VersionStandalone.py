@@ -158,18 +158,14 @@ class PyVersion(object):
     """
     DEFAULT_VERSION_ATTR = 'VERSION'
 
-    def __init__(self, module_name, version_file, build_file, 
-                 version_attr = '', build_key = BUILD_KEY):
+    def __init__(self, module_name, version_file, version_attr = ''):
         'Initialize the PyVersion object with a module name and the path to the version file'
         self.module_name = module_name
         self.version_file = version_file
-        self.build_file = build_file
         self.version_attr = version_attr
         if not self.version_attr:
             self.version_attr = self.DEFAULT_VERSION_ATTR
         self.version_file_template = PYTHON_VERSION_FILE_TEMPLATE
-        self.build_key = build_key
-        self.build_file_template = BUILD_FILE_TEMPLATE
         # read, parse version file(s)
         self.load_current_version()
 
@@ -226,16 +222,6 @@ class PyVersion(object):
         else:
             print 'DRY RUN: ' + msg
         self.current_version = new_version
-        
-        new_build  = build if build is not None else self.current_version[3]
-        msg = 'Setting version in {0} to {1}'.format(self.build_file, new_version[3])
-        if not dry_run:
-            fp = open(self.build_file, 'w')
-            fp.write(self.build_file_template % (BUILD_KEY, new_version[3]))
-            fp.close()
-            print msg
-        else:
-            print 'DRY RUN: ' + msg
 
     def increment_build_number(self, dry_run = False):
         '''Increment the build number and regenerate the version file.
@@ -323,8 +309,8 @@ def generate_cversion(env, version_file, build_file,
     _generate_targets(env, env['Version'][obj_name], alias_prefix)
     return version_obj
 
-def generate_pyversion(env, module_name, version_file, build_file,
-                       version_attr = 'VERSION', alias_prefix = ''):
+def generate_pyversion(env, module_name, version_file, version_attr = 'VERSION',
+                       alias_prefix = ''):
     '''Create the Version object in the environment
     Generate the get_version, set_version and incr_version targets
     '''
@@ -337,7 +323,6 @@ def generate_pyversion(env, module_name, version_file, build_file,
         env['Version'] = {}
     if not env['Version'].has_key(obj_name):
         env['Version'][obj_name] = PyVersion(module_name, version_file, 
-                                             build_file,
                                              version_attr=version_attr)
 
     version_obj = env['Version'][obj_name]

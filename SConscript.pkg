@@ -21,7 +21,7 @@ import VersionStandalone
 # It reads the version from python version file, also can be overrided by
 # OS environment variable APC_VERSION
 
-def generate_pkg_version(env, pkg_name, version_file=None, build_file=None):
+def generate_pkg_version(env, pkg_name, version_file=None):
     'Generate the package version from the version file or an env variable'
     # uses env variables:
     # - VERSION_MODULE, VERSION_ATTR
@@ -32,13 +32,10 @@ def generate_pkg_version(env, pkg_name, version_file=None, build_file=None):
     
     if not version_file:
         version_file = File('#' + env['VERSION_MODULE'] + '.py').abspath
-    if not build_file:
-        build_file = File('#' + 'APInterface/apc_build.h').abspath
     # Read the current version from the version file
     version_obj = VersionStandalone.generate_pyversion(env, 
                                                        env['VERSION_MODULE'],
                                                        version_file,
-                                                       build_file,
                                                        env['VERSION_ATTR'],
                                                        alias_prefix = pkg_name)
     # Check the environment for an override
@@ -130,31 +127,21 @@ apc_package_files = []
 for dest_dir, targets in APC_PKG_MAP.items():
     for tgt in targets:
         full_dir = os.path.join(env['PKG_BASE'], dest_dir)
-        if not dry_run:
-            apc_package_files += env.Install(full_dir, tgt)
-        else:
-            print 'DRY RUN: Install %s to %s' % (env.subst(tgt), dest_dir)
+        apc_package_files += env.Install(full_dir, tgt)
 
 # copy the apbridge version file
 src = os.path.join(Dir('#').abspath,'apbridge_version.py')
 dst = os.path.join(Dir('#').abspath,'python', 'lib', 'pyvoyager')
 copy_version_file = env.Command(dst, src, Copy("$TARGET", "$SOURCE"))
 AlwaysBuild(copy_version_file)
-if not dry_run:
-    apc_package_files += copy_version_file
-else:
-    print 'DRY RUN: Copy %s to %s' % (src, dst)
+apc_package_files += copy_version_file
 
 # copy the python lib directory
 src = os.path.join(Dir('#').abspath,'python', 'lib')
 dst = env.subst(os.path.join(env['PKG_BASE'], 'lib'))
 copy_python_lib = env.Command(dst, src, copy_action)
 AlwaysBuild(copy_python_lib)
-
-if not dry_run:
-    apc_package_files += copy_python_lib
-else:
-    print 'DRY RUN: Copy %s to %s' % (src, dst)
+apc_package_files += copy_python_lib
     
 # note: the fpm command is one long string, it's broken into lines for readability
 # python concatenates strings from multiple lines
@@ -184,23 +171,20 @@ Alias('apbridge_pkg', apbridge_pkg)
 import PublisherStandalone
 
 PACKAGE_TARGETS = {
-    # the package name maps to a tuple of: 
-    # the version file, the build file, the package target(s)
+    # the package name maps to a tuple of: the version file, the package target(s)
     'apbridge':     (File('#' + 'apbridge_version.py'),
-                     File('#' + 'APInterface/apc_build.h'),
                      apbridge_pkg),
 }
 
 for component_name, component_files in PACKAGE_TARGETS.items():
     RELEASE_OPTIONS = {
         'version_file': component_files[0].abspath,
-        'build_file': component_files[1].abspath,
         'version_module': component_name + '_pkg_version',
         'version_attr': env['VERSION_ATTR'],
         'svn_project_path': 'manager_project',
         'svn_label_prefix': component_name + '_pkg_release',
         'git_binary': 'git',
-        'release_artifacts': component_files[2],
+        'release_artifacts': component_files[1],
         'release_dest_dir': os.path.join(env['publish_dir'], 'packages', env['PLATFORM']),
         'release_use_versioned_dest': component_name + '-pkg', # versioned dest dir
         'release_append_version': False, # package file already named with version
