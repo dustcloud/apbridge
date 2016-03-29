@@ -12,15 +12,6 @@ import SCons
 
 from string import Template
 import datetime
-import imp
-
-def load_current_version(module_name, version_file, version_attr = ''):
-    '''Read and parse the version files to get the current version.
-    Returns: the current version structure
-    '''
-    module = imp.load_source(module_name, version_file)
-    current_version = [v for v in getattr(module, version_attr)]
-    return current_version
 
 def version_action(target, source, env):
     """
@@ -33,13 +24,6 @@ def version_action(target, source, env):
         'VER_BUILD_NAME': env['build_name'], 
     }
 
-    if 'VERSION_MODULE' in env:
-        module_name = env['VERSION_MODULE']
-        version_file = module_name + '.py'
-        version_attr = 'VERSION'
-        current_version = load_current_version(module_name, version_file, version_attr)
-        ver_subst['VER_BUILD_VERSION'] = current_version[3]
-        
     with open(str(source[0]), 'r') as inf:
         template_data = inf.read()
     tmpl = Template(template_data)
