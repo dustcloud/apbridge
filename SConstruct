@@ -33,7 +33,7 @@ command_line_vars.AddVariables(
     ('publish_dir', 'Directory for publishing released artifacts', ''),
     ('repository_dir', "Directory to store the .deb file", '/mnt/sdev/repo_scripts'),
     EnumVariable('target', 'Choose target platform', 'i686',
-                                 allowed_values=('i686', 'x86_64', 'armpi')),
+                 allowed_values=('i686', 'x86_64', 'armpi')),
 )
 
 # for SCons to find the right compiler on Windows, TARGET_ARCH must be set 
@@ -45,13 +45,17 @@ if str(baseEnv['user_path']) == '1':
 
 # Setup the default Help message
 Help("""
-To build apbridge:
- 
- $ scons apbridge                      # build the APBridge for i386
- $ scons apbridge target=armpi         # build the APBridge for armpi
+To build the AP Bridge software:
 
- $ scons apbridge_pkg                  # Create APbridge package for i386
- $ scons apbridge_pkg target=armpi     # Create APbridge package for Raspbery Pi
+ $ scons apbridge                      # build the AP Bridge for i386
+ $ scons apbridge target=armpi         # build the AP Bridge for Raspberry Pi
+
+ $ scons apbridge_pkg                  # Create AP Bridge package for i386
+ $ scons apbridge_pkg target=armpi     # Create AP Bridge package for Raspbery Pi
+
+For internal use, to build an AP Bridge release:
+
+ $ scons apbridge_release
 
 Options for building:
 """)
@@ -290,29 +294,19 @@ for d in dirs:
                duplicate = 0,
                exports = {"env": env})
 
-
 # don't use variant BUILD_DIR with python
 SConscript(os.path.join('python', 'SConscript.apc'),
            exports = {"env": env})
 
-# include apbridge_pkg
-build_dir = os.path.join(env['BUILD_DIR'])
-SConscript('SConscript.pkg',
-           variant_dir = os.path.join(env['BUILD_DIR'], 'pkg'),
+# include package / release targets last
+build_dir = os.path.join(env['BUILD_DIR'], 'pkg')
+SConscript(os.path.join('pkg', 'SConscript'),
+           variant_dir = build_dir,
            duplicate = 0,
            exports = {"env": env})
            
-# include SConscript.release last
-#SConscript('SConscript.release',
-#           variant_dir = os.path.join(env['BUILD_DIR'], 'release'),
-#           duplicate = 0,
-#           exports = {"env": env})
-
 # ----------------------------------------------------------------------
 # Useful aliases
 
-Alias('all', ['apbridge'])
-# all components that can be released
-#Alias('all_release', ['apbridge_release'])
-# all components that can be published
-#Alias('all_publish', ['apbridge_publish'])
+Alias('all', ['apbridge_pkg'])
+# apbridge_publish and apbridge_release are the publishing and release targets

@@ -96,25 +96,25 @@ generate_pkg_version(env, env['PKG_NAME'])
 # Package layout for apbridge_pkg
 APC_BINARIES = ['apc']
 APC_PKG_MAP = {
-    '.'   : ['pkg/env.sh'],
+    '.'   : ['env.sh'],
     'bin' : [
         env['DIST_TARGETS']['apbridge'],
-        'pkg/apcctl', 
-        'pkg/update-apc-config.py',
-        'python/bin/apc_console.py',
+        'apcctl', 
+        'update-apc-config.py',
+        '#/python/bin/apc_console.py',
     ],
     'lib' : [],
     'etc/supervisor.conf.d' : [
-        'pkg/supervisor.conf.d/apc-prog.conf.template', 
+        'supervisor.conf.d/apc-prog.conf.template', 
     ],
     'etc/stunnel': [
-        'pkg/apc_stunnel.conf.template',
+        'apc_stunnel.conf.template',
     ],
     'etc/udev.rules.d': [
-        'pkg/udev.rules.d/88-dust-usbs.rules',
+        'udev.rules.d/88-dust-usbs.rules',
     ],
     'conf': [
-        'pkg/apc.conf.template',
+        'apc.conf.template',
     ],
 }
 
