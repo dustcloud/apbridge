@@ -1,0 +1,120 @@
+Import('env')
+
+import os
+import sys
+import platform
+from subprocess import Popen, PIPE, STDOUT
+
+# TODO: this protobuf compile command only works on Linux
+env.Append(PROTOBUF_PYCOM='LD_LIBRARY_PATH=$TOOLCHAIN_DIR/lib $PROTOC -I. --python_out=python/lib/pyvoyager/proto $SOURCE')
+
+# The Python Protobuf generator has special handling for generated proto files
+# in order to avoid getting the build directory into the expected import path.
+def pyprotobuf_action(target, source, env):
+    '''Generate Python protobuf classes
+    '''
+    print str(target[0]), str(source[0])
+
+    top_dir = str(Dir('#'))
+    wd      = None # use current directory
+    out_dir = 'python/lib/pyvoyager/proto'
+    src     = str(source[0])
+    PROTOCPATH = [top_dir, env['BUILD_DIR']]
+    if str(source[0]).startswith(env['BUILD_DIR']):
+        wd      = env['BUILD_DIR']
+        out_dir = '../../' + out_dir
+        src     = os.path.relpath(src, env['BUILD_DIR'])
+        PROTOCPATH = [top_dir, '.']
+    # run the protoc compiler
+    cmd = [env['PROTOC'], '--python_out=' + out_dir, src]
+    cmd += ['-I' + d for d in PROTOCPATH]
+    proc = Popen(cmd, stdout=PIPE, cwd=wd)
+    out, err = proc.communicate()
+    rc = proc.returncode
+    # TODO: check rc
+    return rc
+
+#action = Action(env['PROTOBUF_PYCOM'], ' [PROTOPY] $SOURCE'),
+#
+protobuf_bld = Builder(action = Action(pyprotobuf_action, ' [PROTOPY] $SOURCE'),
+                       suffix = '_pb2.py',
+                       src_suffix = '.proto')
+env.Append(BUILDERS = {'ProtobufPython' : protobuf_bld})
+
+# ----------------------------------------------------------------------
+# Enum to string code generation
+
+ENUM_TO_STRING_SCRIPT = 'scripts/genEnumToString.py'
+ENUM_TO_STRING_COM = '{0} {1} --lang=python $SOURCE.abspath $TARGET.dir'
+enum_to_string_py_bld = Builder(action = Action(ENUM_TO_STRING_COM.format(env['python'], ENUM_TO_STRING_SCRIPT), 
+                                                ' [CODEGEN] $SOURCE'),
+                             suffix = '_enum.py',
+                             src_suffix = '.h',
+                             )
+env.Append(BUILDERS = {'EnumToStringPython' : enum_to_string_py_bld})
+
+# ----------------------------------------------------------------------
+# DN to string code generation
+
+DN_TO_STRING_SCRIPT = 'scripts/dnToStr.py'
+DN_TO_STRING_COM = '{0} {1} $SOURCE $TARGET'
+
+dnToStr = env.Command('lib/pyvoyager/enum/dn_to_str.py', 
+                      '#/shared/include/6lowpan/public',
+                      DN_TO_STRING_COM.format(env['python'], DN_TO_STRING_SCRIPT))
+
+# ----------------------------------------------------------------------
+# Generated files
+# *_TARGETS are lists of (target, source) tuples
+# TODO: we could use just a list of source files if there's a way to specify 
+# the output directory
+
+# Protobuf wants to generate files using the full path, so the lib/proto
+# directory structure mirrors where .proto files are found
+env['PYPROTOBUF_TARGETS'] = [
+    ('lib/pyvoyager/proto/rpc/common_pb2.py', '#/rpc/common.proto'),
+    ('lib/pyvoyager/proto/logging/logevent_pb2.py', '#/logging/logevent.proto'),
+    ('lib/pyvoyager/proto/APInterface/rpc/apc_pb2.py', '#/APInterface/rpc/apc.proto'),
+]
+
+env['PYENUM_TARGETS'] = [
+    ('lib/pyvoyager/enum/RpcCommon_enum.py', '#/rpc/public/RpcCommon.h'),
+    ('lib/pyvoyager/enum/GPSError_enum.py', '#/APInterface/public/GPSError.h'),
+    ('lib/pyvoyager/enum/IAPCClient_enum.py', '#/APInterface/public/IAPCClient.h'),
+	]
+
+# accumulate a list of all codegen targets
+codegen_dirs = []
+# TODO: need to generate a list of intermediate directories that may not contain python files
+codegen_targets = env.Command('lib/pyvoyager/proto/__init__.py', [], 
+                              Touch('$TARGET'))
+codegen_targets += env.Command('lib/pyvoyager/proto/APInterface/__init__.py', [], 
+                               Touch('$TARGET'))
+for tgt, src in env['PYPROTOBUF_TARGETS']:
+    #print tgt, src
+    # create __init__.py files in each directory
+    tgt_dir, tgt_file = os.path.split(tgt)
+    if not tgt_dir in codegen_dirs:
+        initpy_path = os.path.join(tgt_dir, '__init__.py')
+        codegen_targets += env.Command(initpy_path, [], Touch('$TARGET'))
+        codegen_dirs.append(tgt_dir)
+    if src.startswith('$BUILD_DIR'):
+        real_src = '#/' + src
+        codegen_targets += env.ProtobufPython(tgt, real_src)
+    else:
+        codegen_targets += env.ProtobufPython(tgt, src)
+
+for tgt, src in env['PYENUM_TARGETS']:
+    # create __init__.py files in each directory
+    tgt_dir, tgt_file = os.path.split(tgt)
+    if not tgt_dir in codegen_dirs:
+        initpy_path = os.path.join(tgt_dir, '__init__.py')
+        codegen_targets += env.Command(initpy_path, [], Touch('$TARGET'))
+        codegen_dirs.append(tgt_dir)
+    codegen_targets += env.EnumToStringPython(tgt, src)
+
+codegen_targets += dnToStr
+
+codegen = env.Alias('py-codegen', codegen_targets)
+env['py_codegen'] = codegen_targets
+

@@ -1,0 +1,11 @@
+Import('env')
+
+import os
+
+log_proto = env.ProtobufCpp('logevent')
+
+logging_src = Glob('*.cpp') + [log_proto[0]]
+# note: by using DustLibrary, we automatically find generated sources
+liblogging = env.DustLibrary('logging', logging_src)
+Alias('liblogging', liblogging)
+

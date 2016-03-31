@@ -1,0 +1,9 @@
+Import('env')
+
+import os
+
+common_src = Glob('*.cpp')
+# note: by using DustLibrary, we automatically find generated sources
+libcommon = env.DustLibrary('common', common_src)
+Alias('libcommon', libcommon)
+

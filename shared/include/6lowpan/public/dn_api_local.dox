@@ -1,0 +1,220 @@
+/*
+ * Copyright (c) 2016, Linear Technology. All rights reserved.
+ */
+
+//=========================== header ==========================================
+
+/**
+\defgroup loc_intf Raw Local Interface
+
+\brief Raw interface to the SmartMesh protocol stack.
+
+\note This module details the raw local interface. If application, use the 
+   simpler to use \ref module_dnm_local, which provides a "wrapper" around the
+   raw local interface.
+
+As detailed in the On-Chip Firmware Development Guide, communicating with the
+SmartMesh stack is done through two channels (see \ref dn_channel), one in
+each direction. These channels, together with the format of the messages sent
+over them, form the Local Interface.
+
+\image html ocsdk_channels_stack.png
+
+The Control channel is used for your application to send commands to the
+SmartMesh stack, and receive responses. Example commands are "what is my MAC
+address?", "join a network", or "send this packet to this address".
+
+The Notification channel is used by the SmartMesh stack to notify your
+application that something happened. Example notifications are "I just joined
+a network", or "I received this packet". To react quickly to notifications,
+your application can have a uC/OS-II task dedicated to waiting for messages
+from the Notification channel, and reacting to them appropriately.
+
+Data sent over channels consists of byte buffers with an associated message
+type (see \ref dn_channel). All messages sent by your application to the
+SmartMesh stack (over the control channel) need to be of
+#DN_MSG_TYPE_NET_CTRL message type. Similarly, all notifications the SmartMesh
+stack sends to your application are of #DN_MSG_TYPE_NET_NOTIF type.
+
+Since all messages sent to the stack or received from the stack are of the same
+type from the channel's perspective (#DN_MSG_TYPE_NET_CTRL and
+#DN_MSG_TYPE_NET_NOTIF, respectively), it is the content of messages that
+identifies the exact command or notification.
+
+\warning Multi-byte fields in the messages exchanges over the Command and
+   Notification channels of the local interface are "big-endian" (also
+   known as "network order"). This is different from the native order of the
+   Cortex-M3, which is "little-endian". You can use the <tt>ntohl()</tt>,
+   <tt>ntohs()</tt>, <tt>ntohll()</tt>, <tt>htons()</tt>, <tt>htonl()</tt> and
+   <tt>htonll()</tt> helper functions to convert 16-bit, 32-bit or 64-bit
+   values to and from network order.
+
+\section dn_api_local_cmd_formats Command Formats
+
+This section discusses the format of the messages sent from your application
+to the SmartMesh Stack over the control channel. These messages are called
+"commands", since they instruct the stack to do something.
+
+A command is a buffer of bytes formatted a specific way. Your application needs
+to prepare this buffer, then send it over the control channel using the
+#dn_sendSyncMsg() function. 
+
+All commands start with a #dn_api_cmd_hdr_t header. The
+#dn_api_cmd_hdr_t::cmdId element of that header identifies the command. For
+example, setting #dn_api_cmd_hdr_t::cmdId to #DN_API_LOC_CMD_JOIN instructs
+the SmartMesh stack to join a network.
+
+Some commands are more complex, and require the #dn_api_cmd_hdr_t header to be
+followed by more bytes. For example, when asking the stack to open a socket,
+your application needs to indicate the transport protocol. It does so by
+appending a C struct of type #dn_api_loc_open_socket_t to the
+#dn_api_cmd_hdr_t header, and setting the #dn_api_loc_open_socket_t::protocol
+element of that struct to the protocol of interest.
+
+The control channel is synchronous, so when your application calls
+#dn_sendSyncMsg(), the SmartMesh stack answers with a response. Similar to
+commands, responses consist of a buffer of bytes with a particular format. All
+responses start with the #dn_api_cmd_hdr_t header indicating the command ID
+this is a response for. This header is then followed by a one-byte return code,
+taken from #dn_api_rc_t.
+
+Some replies are more complex, and require the #dn_api_cmd_hdr_t header to be
+followed by more bytes. For example, when your application asks the stack to
+open a socket, the stack will reply with the identifier of the newly opened
+socket. It does so by appending a C struct of type
+#dn_api_loc_rsp_open_socket_t to the #dn_api_cmd_hdr_t header, and setting the
+#dn_api_loc_rsp_open_socket_t::socketId element of the identifier of the new
+socket.
+
+The most complex command to format are the ones to get and set different
+configuration parameters of the SmartMesh stack. One example is setting the
+join duty cycle. This message is formatted as follows:
+- a #dn_api_cmd_hdr_t struct with #dn_api_cmd_hdr_t::cmdId set to
+  #DN_API_LOC_CMD_SETPARAM to indicate this is a "set" command.
+- a #dn_api_set_dutycycle_t struct the  #dn_api_set_dutycycle_t::paramId set to
+  #DN_API_PARAM_JOINDUTYCYCLE indicating you want to set the join duty cycle,
+  and  #dn_api_set_dutycycle_t::dutyCycle to the target duty cycle.
+
+\section dn_api_local_notif_formats Notification Formats
+
+Notifications are sent by the SmartMesh stack to notify your application of
+some event. Notifications are buffers of bytes sent over the synchronous
+Notification channel of the local interface with type #DN_MSG_TYPE_NET_NOTIF.
+The content of the notification message allows you to distinguish between
+different types of notifications.
+
+To receive those notifications, you application needs to:
+- create a synchronous channel using #dn_createSyncChannel().
+- register that channel to channel type #DN_MSG_TYPE_NET_NOTIF.
+- periodically call #dn_readSyncMsg(). This function blocks until a
+  notification is received. Typically, you can wait and handle notification
+  as part of a dedicated uC/OS-II task.
+
+All notifications start with a #dn_api_cmd_hdr_t struct indicating the type of
+notification. This header is then followed by a number of bytes, the format of
+which depends on the type of notification. For example,
+#dn_api_loc_notif_txdone_t when #dn_api_cmd_hdr_t::cmdId is
+#DN_API_LOC_NOTIF_TXDONE.
+*/
+
+//=========================== struct ==========================================
+
+/**
+\var dn_api_loc_svcrequest_t::type
+
+Acceptable options are listed in \ref dn_api_common_service_type "Service type".
+*/
+
+/**
+\var dn_api_loc_get_service_t::type
+
+Acceptable options are listed in \ref dn_api_common_service_type "Service type".
+*/
+
+/**
+\var dn_api_loc_rsp_get_service_t::type
+
+Acceptable options are listed in \ref dn_api_common_service_type "Service type".
+*/
+
+/**
+\var dn_api_loc_rsp_get_service_t::status
+
+Acceptable options are listed in \ref dn_api_common_service_state "Service state".
+*/
+
+
+/**
+\var dn_api_loc_open_socket_t::protocol
+
+Acceptable options are listed in \ref dn_api_common_transport "Transport protocol".
+*/
+
+/**
+\var dn_api_loc_sendto_t::serviceType
+
+Acceptable options are listed in \ref dn_api_common_service_type "Service type".
+*/
+
+/**
+\var dn_api_loc_sendto_t::priority
+
+Lower priority packets will queue behind higher ones. We recommend using medium
+priority for data traffic.
+
+Acceptable options are listed in \ref dn_api_common_pkt_prio "Packet priority".
+*/
+
+/**
+\var dn_api_loc_notif_events_t::events
+
+Acceptable flags are listed in \ref dn_api_common_event_flags "Event Flags".
+*/
+
+/**
+\var dn_api_rsp_get_motestatus_t::state
+
+Acceptable options are listed in \ref dn_api_common_mote_state "Mote state".
+*/
+
+/**
+\var dn_api_loc_notif_events_t::state
+
+Acceptable options are listed in \ref dn_api_common_mote_state "Mote state".
+*/
+
+/**
+\var dn_api_loc_notif_events_t::alarms
+
+Acceptable flags are listed in \ref dn_api_common_alarm_flags "Alarm flags".
+*/
+
+/**
+\var dn_api_loc_notif_txdone_t::status
+
+Acceptable options are listed in \ref dn_api_common_tx_status "Transmission status".
+*/
+
+/**
+\var dn_api_set_txpower_t::txPower
+
+Acceptable options are listed in \ref dn_api_common_tx_power "Transmission power".
+*/
+
+/**
+\var dn_api_rsp_get_txpower_t::txPower
+
+Acceptable options are listed in \ref dn_api_common_tx_power "Transmission power".
+*/
+
+/**
+\var dn_api_set_rtmode_t::mode
+
+Acceptable options are listed in \ref dn_api_common_routing_mode "Routing mode".
+*/
+
+/**
+\var dn_api_set_mobility_t::type
+
+Acceptable options are listed in \ref dn_api_common_mobility_type "Mobility type".
+*/

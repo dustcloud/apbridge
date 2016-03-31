@@ -1,0 +1,121 @@
+import "rpc/common.proto";
+
+package apc;
+
+/**
+ * APC commands
+ */
+enum APCCommandType {
+   GET_APC_INFO    = 1;
+   GET_AP_INFO     = 2;
+   GET_APC_STATS   = 3;
+   CLEAR_APC_STATS = 4;
+   AP_RESET        = 5;
+   AP_API		   = 6;
+}
+
+
+/**
+ * APC Info request structure
+ */
+message APCInfoReq { }
+
+/**
+ * APC Info response structure
+ *
+ * \param clientId Client identifier
+ */
+message APCInfoResp {
+   required string       clientId = 1;
+   optional uint32       managerState = 2;
+   optional string       managerHost = 3;
+   optional uint32       managerPort = 4;
+   optional uint32       gpsState = 5;
+   optional uint32       gpsSatsUsed = 6;
+   optional uint32       gpsSatsVisible = 7;
+   optional string       apcVersion = 8;
+}
+
+
+/**
+ * AP Info request structure
+ */
+message APInfoReq { }
+
+/**
+ * AP Info response structure
+ *
+ * \param macAddr AP MAC address
+ */
+message APInfoResp {
+   required bytes     macAddr = 1;
+   optional uint32    networkid = 2;
+   optional uint32    clksource = 3;
+   optional string    appVer = 4;
+   optional string    stackVer = 5;
+   optional uint32    apState = 6;
+}
+
+
+/**
+ * APC Stats request structure
+ */
+message APCStatsReq { }
+
+/**
+ * APC Stats response structure
+ *
+ */
+message APCStatsResp {
+   optional uint32  apQueueLen    = 1;
+   optional uint32  apMinResp     = 2;
+   optional uint32  apMaxResp     = 3;
+   optional uint32  apAvgResp     = 4;
+   optional uint32  apPktsSent    = 5;
+   optional uint32  apNackSent    = 6;
+   optional uint32  apRetriesSent = 7;
+   optional uint32  apPktsRecv    = 8;
+   optional uint32  apRespRecv    = 9;
+   optional uint32  apNackRecv    = 10;
+   optional uint32  apMaxNackCount= 11;
+   optional uint32  apRetriesRecv = 12;
+   optional uint32  apMinTimeInQueue = 13;
+   optional uint32  apMaxTimeInQueue = 14;
+   optional uint32  apAvgTimeInQueue = 15;
+   
+   optional uint32  mgrQueueLen   = 16;
+   optional uint32  mgrPktSent    = 17;
+   optional uint32  mgrPktRecv    = 18;
+   
+   optional common.DelayStat fromAP = 19;
+   optional common.DelayStat toAP   = 20;
+   optional common.DelayStat toMngr = 21;
+   optional uint32  numOutBuffers   = 22;
+
+   optional uint32 apCurrPktRate    = 23;
+   optional double ap30secPktRate   = 24;
+   optional double ap5minPktRate    = 25;
+   optional double apAvgPktRate     = 26;
+}
+
+
+/**
+ * AP API request structure
+ *
+ * \param cmdId Command ID
+ *  	  request command payload
+ */
+message AP_APIReq { 
+   required uint32    cmdId	 = 1;
+   optional bytes   payload  = 2;
+}
+/**
+ * AP API response structure
+ *
+ * \param cmdId Command ID
+ *  	  reponse of command
+ */
+message AP_APIResp {
+   required uint32    cmdId	 = 1;
+   optional bytes   response = 2;
+}
