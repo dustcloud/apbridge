@@ -212,10 +212,9 @@ class Listener(object):
         self.fRun = False 
 
     def close(self):
-        if self.listener:
-           self.listener.disconnect(self.publisher_addr)
-           self.listener.close()
         self.stop()
+        if self.listener:
+           self.listener.close()
 
     def getName(self):
         'Get listener name'
