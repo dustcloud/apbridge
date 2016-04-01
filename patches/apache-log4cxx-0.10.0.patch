@@ -1,0 +1,37 @@
+diff -u -bur apache-log4cxx-0.10.0/src/examples/cpp/console.cpp apache-log4cxx-0.10.0-patched/src/examples/cpp/console.cpp
+--- apache-log4cxx-0.10.0/src/examples/cpp/console.cpp	2008-03-31 15:34:52.000000000 -0700
++++ apache-log4cxx-0.10.0-patched/src/examples/cpp/console.cpp	2013-04-15 16:28:13.000327000 -0700
+@@ -15,7 +15,9 @@
+  * limitations under the License.
+  */
+ 
++#include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <log4cxx/logger.h>
+ #include <log4cxx/consoleappender.h>
+ #include <log4cxx/simplelayout.h>
+diff -u -bur apache-log4cxx-0.10.0/src/main/cpp/inputstreamreader.cpp apache-log4cxx-0.10.0-patched/src/main/cpp/inputstreamreader.cpp
+--- apache-log4cxx-0.10.0/src/main/cpp/inputstreamreader.cpp	2008-03-31 15:34:09.000000000 -0700
++++ apache-log4cxx-0.10.0-patched/src/main/cpp/inputstreamreader.cpp	2013-04-15 15:56:11.000009000 -0700
+@@ -21,6 +21,8 @@
+ #include <log4cxx/helpers/pool.h>
+ #include <log4cxx/helpers/bytebuffer.h>
+ 
++#include <memory.h>
++
+ using namespace log4cxx;
+ using namespace log4cxx::helpers;
+ 
+diff -u -bur apache-log4cxx-0.10.0/src/main/cpp/socketoutputstream.cpp apache-log4cxx-0.10.0-patched/src/main/cpp/socketoutputstream.cpp
+--- apache-log4cxx-0.10.0/src/main/cpp/socketoutputstream.cpp	2008-03-31 15:34:09.000000000 -0700
++++ apache-log4cxx-0.10.0-patched/src/main/cpp/socketoutputstream.cpp	2013-04-15 16:20:08.000013000 -0700
+@@ -20,6 +20,8 @@
+ #include <log4cxx/helpers/socket.h>
+ #include <log4cxx/helpers/bytebuffer.h>
+ 
++#include <memory.h>
++
+ using namespace log4cxx;
+ using namespace log4cxx::helpers;
+ 
