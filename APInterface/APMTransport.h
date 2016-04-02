@@ -115,7 +115,7 @@ public:
 
    void        open(const init_param_t& param);
    apc_error_t stop();
-
+            
    // handle data from serial port
 
    virtual apc_error_t handleMsg(apt_hdr_s* pHdr, const uint8_t* data, size_t size);
@@ -185,6 +185,8 @@ public:
    void disableJoin();
    void enableJoin(uint32_t netId);
 
+   void enableAbort()  { m_abortEnabled = true; }
+   void disableAbort() { m_abortEnabled = false; }
    // Send Disconnect command to AP
    void disconnectAP(bool isSinchBit = false);
 
@@ -308,6 +310,7 @@ private:
    uint32_t         m_netId;
    bool             m_reconnectSerial;
    boost::asio::deadline_timer m_queueCheckTimer; ///< periodically check queu
+   bool             m_abortEnabled;
 
    bool            setJoinProcessState_p(bool isConnected);
    bool            setAPConnectionState_p(bool isConnected);
