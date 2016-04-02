@@ -413,7 +413,6 @@ class Listener(object):
         self.fRun = True
         # Start queue reader
         t = threading.Thread(target=self.queueReader)
-        t.daemon = True
         t.start()
         
         # create the poll object
@@ -438,9 +437,10 @@ class Listener(object):
             except zmq.ZMQError as ex:
                if self.fRun :
                   self.fatalZMQError(ex)
-                  
+        
         self.inpQueue.put(self.QueueEnd())
         self.inpQueue.join()
+        t.join()
         
     def queueReader(self) :
         while True :
