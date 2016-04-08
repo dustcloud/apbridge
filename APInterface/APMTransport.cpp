@@ -24,9 +24,9 @@ const uint16_t DEFAULT_MAX_RETRIES = 3;
 const uint16_t DEFAULT_MAX_MSG_SIZE = 256; // bytes -- TODO: sync with APC
 const uint32_t DEFAULT_MAX_PACKET_AGE = 1500; // milliseconds, max packet age before triggering 
                                               // TX_PAUSE to manager
-uint32_t last_numPktsSent = 0;                // total packets sent one second ago
-uint32_t numPktSent_30sec_ago = 0;            // total packet sent 30 seconds ago
-uint32_t numPktSent_5min_ago = 0;             // total packet sent 5 minutes ago
+uint32_t last_numNotifRecv = 0;               // total notification received one second ago
+uint32_t numNotifRecv_30sec_ago = 0;          // total notification received 30 seconds ago
+uint32_t numNotifRecv_5min_ago = 0;           // total notification received 5 minutes ago
 
 
 CAPMTransport::init_param_t::init_param_t()
@@ -841,20 +841,23 @@ void CAPMTransport::startPPSTimer()
 
 void CAPMTransport::handlePPSTimeout(const boost::system::error_code& error)
 {
-   m_stats.m_packetRate = m_stats.m_numPktsSent - last_numPktsSent;
-   last_numPktsSent = m_stats.m_numPktsSent;
+   uint32_t numNotifRecv;
+
+   numNotifRecv = m_stats.m_numPktsRecv - m_stats.m_numRespRecv;
+   m_stats.m_packetRate = numNotifRecv - last_numNotifRecv;
+   last_numNotifRecv = numNotifRecv;
 
    m_stats.m_totalSecs ++;
    // calculate last 30 sec average packet rate
    if (m_stats.m_totalSecs % 30 == 0) {
-      m_stats.m_30secPacketRate = (m_stats.m_numPktsSent - numPktSent_30sec_ago) / 30.0;
-	  numPktSent_30sec_ago = m_stats.m_numPktsSent;
+      m_stats.m_30secPacketRate = (numNotifRecv - numNotifRecv_30sec_ago) / 30.0;
+	  numNotifRecv_30sec_ago = numNotifRecv;
    }
 
    // calculate last 5 min average packet rate
    if (m_stats.m_totalSecs % 300 == 0) {
-      m_stats.m_5minPacketRate = (m_stats.m_numPktsSent - numPktSent_5min_ago) / 300.0;
-	  numPktSent_5min_ago = m_stats.m_numPktsSent;
+      m_stats.m_5minPacketRate = (numNotifRecv - numNotifRecv_5min_ago) / 300.0;
+	  numNotifRecv_5min_ago = numNotifRecv;
    }
 
    startPPSTimer();

@@ -72,7 +72,7 @@ StatsDict = {
       'apMaxTimeInQueue' : [14,'Time In Queue Max (us)', '0'],
       'apAvgTimeInQueue' : [15,'Time In Queue Avg (us)', '0'],
       'numOutBuffers'    : [16,'Number of output buffers', '0'],
-      'apCurrPktRate'    : [17, 'Current Rate (pps)',   '0.0'],
+      'apCurrPktRate'    : [17, 'RX Current Rate(pps)',   '0.0'],
       'ap30secPktRate'   : [18, '30 sec average (pps)', '0.0'],
       'ap5minPktRate'    : [19, '5  min average (pps)', '0.0'],
       'apAvgPktRate'     : [20, 'total  average (pps)', '0.0'],
@@ -376,10 +376,7 @@ class ApcClient(BaseRpcClient):
 
              # print delay stats
              delayStats = rpcRespToDict(apcStats_resp)
-             if 'AP/APC Statistics' in names:
-                print "TX delays:  ", statDelaysToString(delayStats['toAP'])
-                print "RX delays:  ", statDelaysToString(delayStats['fromAP'])
-             elif 'Manager' in names:
+             if 'Manager' in names:
                 print "TX delays:  ", statDelaysToString(delayStats['toMngr'])
              print            
     

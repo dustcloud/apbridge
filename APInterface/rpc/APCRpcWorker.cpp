@@ -185,7 +185,7 @@ zmessage* CAPCRpcWorker::handleGetStats(std::string requestStr)
 	  response.set_apcurrpktrate(apm_stats.m_packetRate);
 	  response.set_ap30secpktrate((double)apm_stats.m_30secPacketRate);
 	  response.set_ap5minpktrate((double)apm_stats.m_5minPacketRate);
-	  response.set_apavgpktrate((double)(apm_stats.m_numPktsSent * 1.0 / apm_stats.m_totalSecs));
+	  response.set_apavgpktrate((double)((apm_stats.m_numPktsRecv - apm_stats.m_numRespRecv)* 1.0 / apm_stats.m_totalSecs));
    }
    
    return createResponse(apc::GET_APC_STATS, response);
