@@ -162,6 +162,8 @@ class MainCmdArgParser(ArgumentParser) :
          args.config_file = '{0}.{1}'.format(self.appname, DEFAULT_CONFEXT)
       configName = getFullFileName(self.apphome, DEFAULT_CONFPATH, args.config_file)
       
+      isUsernameOverriden = bool(args.username)
+         
       args = None
       if os.path.isfile(configName)  :
          with open(configName, "r") as cfgFile:
@@ -177,6 +179,8 @@ class MainCmdArgParser(ArgumentParser) :
                if not (field and value):
                   self.errmsg = 'Error line "{0}" in configuration file: {1}'.format(line, configName)
                   return None
+               if isUsernameOverriden and field.strip() == 'password':
+                  continue
                fileArgs.append('--' + field.strip())
                fileArgs.append(value.strip())
             args = ArgumentParser.parse_args(self, fileArgs)
