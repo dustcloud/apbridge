@@ -81,7 +81,6 @@ PACKED_START /** all structures that follow are packed */
 #define DN_API_NET_NOTIF_STATUS_CHANGE           0x93      ///< Status change 
 #define DN_API_NET_NOTIF_BLINK                   0x94      ///< Blink
 #define DN_API_NET_NOTIF_DSCV_NBR_REDUCED        0x95      ///< Reduced Discovery Health Report.
-#define DN_API_NET_NOTIF_RSSI                    0x96      ///< RSSI report 
 
 #define DN_API_NET_NOTIF_FIRST                   DN_API_NET_NOTIF_DEV_HR
 #define DN_API_NET_NOTIF_LAST                    DN_API_NET_NOTIF_RSSI
@@ -207,6 +206,10 @@ typedef enum {
 
 /// status bitmap for dn_api_net_notif_status_change_t
 #define DN_API_STATUS_CHANGED_GPS   0x1
+
+// Extended health reports
+#define DN_API_TLV_REPORT_RSSI  0x1
+#define DN_API_MAX_SUPPORTED_MAC_CHANNELS   15
 
 // common link definition
 typedef struct {
@@ -738,7 +741,13 @@ typedef struct {
    INT8U status;
 }   dn_api_net_rsp_read_clk_src_status_t;
 
-#define DN_API_MAX_SUPPORTED_MAC_CHANNELS    15
+typedef struct {
+   INT8U tag;
+   INT8U len;
+   #ifndef __cplusplus
+   INT8U val[];
+   #endif
+} dn_api_ext_hr_t;
 
 typedef struct {
    INT8S  avgIdleRSSI;        // average rssi measured during idle listen on this channel
@@ -746,7 +755,6 @@ typedef struct {
    INT16U txUnicastFailCnt;   // number of no-acks on this channel
 } netapi_rssi_report_t;
 
-// DN_API_NET_NOTIF_RSSI - RSSI report
 typedef struct { 
    netapi_rssi_report_t  report[DN_API_MAX_SUPPORTED_MAC_CHANNELS];
 }   dn_api_net_notif_rssi_report_t;
