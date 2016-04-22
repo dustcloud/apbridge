@@ -212,10 +212,9 @@ class Listener(object):
         self.fRun = False 
 
     def close(self):
-        if self.listener:
-           self.listener.disconnect(self.publisher_addr)
-           self.listener.close()
         self.stop()
+        if self.listener:
+           self.listener.close()
 
     def getName(self):
         'Get listener name'
@@ -414,7 +413,6 @@ class Listener(object):
         self.fRun = True
         # Start queue reader
         t = threading.Thread(target=self.queueReader)
-        t.daemon = True
         t.start()
         
         # create the poll object
@@ -439,9 +437,10 @@ class Listener(object):
             except zmq.ZMQError as ex:
                if self.fRun :
                   self.fatalZMQError(ex)
-                  
+        
         self.inpQueue.put(self.QueueEnd())
         self.inpQueue.join()
+        t.join()
         
     def queueReader(self) :
         while True :

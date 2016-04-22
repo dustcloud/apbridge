@@ -115,7 +115,8 @@ CAPMTransport::CAPMTransport(size_t maxMsgSize, boost::asio::io_service& io_serv
      m_isRunning(false),
      m_netId(0),
      m_reconnectSerial(bReconnectSerial),
-     m_queueCheckTimer(io_service)
+     m_queueCheckTimer(io_service),
+     m_abortEnabled(true)
 {
    ;
 }
@@ -541,19 +542,22 @@ void CAPMTransport::handleRetryTimeout(const boost::system::error_code& error)
       m_curRetryCount++;
       startRetryTimer();
    } else {
-      DUSTLOG_ERROR(APM_IO_LOGGER,"No response after " << m_init_params.maxRetries << " retries. AP is lost, reset AP.");
+      DUSTLOG_ERROR(APM_IO_LOGGER,"No response after " << m_init_params.maxRetries << " retries."
+         << (m_abortEnabled ? " AP is lost, reset AP." : ""));
       //AP is lost so no point of keep on pinging
       stopPingTimer();
-      //Send AP Lost to manager
-      sendAPLostNotif_p();
-      //Hardware reset AP
-      hwResetAP();
+      if (m_abortEnabled) {
+         //Send AP Lost to manager
+         sendAPLostNotif_p();
+         //Hardware reset AP
+         hwResetAP();
 
-      // if reconnect-serial is enabled, we restart APC after maxRetries.
-	  if (m_reconnectSerial) {
-	      // let's restart APC as well
-	      DUSTLOG_WARN(APM_IO_LOGGER,"Restarting APC.");
-	      IChangeNodeState::getChangeNodeStateObj().stop("Serial Port Error");
+         // if reconnect-serial is enabled, we restart APC after maxRetries.
+	      if (m_reconnectSerial) {
+	         // let's restart APC as well
+	         DUSTLOG_WARN(APM_IO_LOGGER,"Restarting APC.");
+	         IChangeNodeState::getChangeNodeStateObj().stop("Serial Port Error");
+         }
       }
    }
 }

@@ -20,6 +20,7 @@
 #include "6lowpan/public/dn_api_common.h"
 #include "6lowpan/public/dn_api_local.h"
 #include "6lowpan/public/dn_api_net.h" //For Clock Source Constants
+#include "common/IChangeNodeState.h"
 
 
 // Manage the protocol with the AP, integrate with AP Connector
@@ -27,6 +28,8 @@
 const char CLIENT_LOG[] = "apc.io";
 
 const int SEND_TIME_TIMEOUT = 60000; // milliseconds
+
+const int MAX_NUM_RESET = 3;
 
 static const int32_t UTC_MIDNIGHT = (23*60 + 59) * 60 + 59;       // 23:59:59
 static const int32_t AP_BLACKOUT          = UTC_MIDNIGHT - 30;    // Blackout time 30 sec before midnight 
@@ -628,9 +631,13 @@ void CAPCoupler::prepareAP_p(uint32_t e)
 
    if (e & E_STOP) {
       // Stopping process
+      m_transport->disableAbort();
       m_transport->disableJoin();   // Disable joining
       m_transport->disconnectAP(true);
+std::cout << "prepareAP_p::waitEvents_p " << timoutMsec << std::endl;
       waitEvents_p(E_APM_BOOT | E_APM_REBOOT, timoutMsec);
+std::cout << "prepareAP_p::finish" << std::endl; 
+      m_transport->enableAbort();
       return;
    }
 
@@ -638,6 +645,7 @@ void CAPCoupler::prepareAP_p(uint32_t e)
       return;  // Don't touch AP 
    }
 
+   m_transport->disableAbort();
    // Disconnect / reset AP
    if (e & E_APM_LOST) {
       // AP Lost - reset it
@@ -650,10 +658,18 @@ void CAPCoupler::prepareAP_p(uint32_t e)
          timoutMsec = m_disconnectTimeoutShortMsec;
    }
 
+   uint32_t maxNumResets = MAX_NUM_RESET;
    while (waitEvents_p(E_APM_BOOT | E_APM_REBOOT, timoutMsec) == E_TIMEOUT) {
-      m_transport->hwResetAP();
-      timoutMsec = m_hwResetTimeoutMsec;
+      if (maxNumResets == 0) {
+	      DUSTLOG_ERROR(m_logname, "Restarting APC. No AP-boot event");
+	      IChangeNodeState::getChangeNodeStateObj().stop("No AP-boot event");
+      } else {      
+         m_transport->hwResetAP();
+         timoutMsec = m_hwResetTimeoutMsec;
+         --maxNumResets;
+      }
    }
+   m_transport->enableAbort();
 }
 
 void CAPCoupler::synchStop_p()

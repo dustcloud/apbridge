@@ -116,29 +116,34 @@ class CommandLineHandler(cmd.Cmd):
 
        cmd = args[0].split(" ")
 
-       if len(cmd) != 2:
-          printError("INVALID_CL_ARGS")
+       if len(cmd) <= 1:
+	      # list notifications for all listeners
+          for key, listener in self.listenersDic.items():
+             notifTypesList = listener.getNotifTypes()
+             notifTypesStr = ", ".join(notifTypesList)
+          printInfo('{0}:\n {1}\n'.format(listener.getName(),notifTypesStr))
           return
 
        notifType = cmd[0]
+       fEnable = cmd[1]
 
        if cmd[1] == 'off':
-           fEnable = False
+		   fEnable = False
        elif cmd[1] == 'on':
            fEnable = True
        else:
-           printError("INVALID_CL_ARGS")
+           printError("INVALID_CL_ARGS", obv="{0} should be on or off.".format(fEnable))
+           return
+       
+       if fEnable and notifType.upper() == "ALL":
+           printError("INVALID_CL_ARGS", obv="'all on' is not supported.")
            return
 
        if notifType.upper() == "ALL":
           try:
              for key, listener in self.listenersDic.items():
-                if fEnable:
-                   listener.enableTraceAll()
-                   printInfo("Trace enabled for all")
-                else:
-                   listener.disableTrace()
-                   printInfo("Trace disabled for all")
+                listener.disableTrace()
+             printInfo("Trace disabled for all")
           except Exception as e:
              printError(obv=str(e))
           return

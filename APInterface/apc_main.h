@@ -54,7 +54,7 @@ const uint32_t APC_DEFAULT_RECONNECT_DELAY = 1000; // Default interval for APC t
 const uint32_t APC_DEFAULT_DISCONNECT_TIMEOUT = 30000; // Default time to declare the connection is dead, in milliseconds
 
 // Boot timeout (msec)
-const uint32_t  RESET_BOOT_TIMEOUT             = 600000;
+const uint32_t  RESET_BOOT_TIMEOUT             = 30000;
 const uint32_t  DISCONNECT_BOOT_TIMEOUT_SHORT  = 4000;       
 const uint32_t  DISCONNECT_BOOT_TIMEOUT_LONG   = 30000;
 

@@ -268,7 +268,7 @@ void CSerialPort::resetTxLine()
       boost::asio::write(resetPort, boost::asio::buffer(RESET_PORT_DATA,
                                                         sizeof(RESET_PORT_DATA)));
       resetPort.close();
-   } catch (const boost::exception& ex) {
+   } catch (const boost::exception&) {
       DUSTLOG_WARN(SERIAL_LOGGER, "Failed to open AP reset port: " << m_resetPort);
    }
 }
