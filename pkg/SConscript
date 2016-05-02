@@ -102,6 +102,7 @@ APC_PKG_MAP = {
         'apcctl', 
         'update-apc-config.py',
         '#/python/bin/apc_console.py',
+        'apc_launcher.py',
     ],
     'lib' : [],
     'etc/supervisor.conf.d' : [
