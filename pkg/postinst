@@ -22,6 +22,7 @@ chown dust:dust $APC_HOME/logs
 
 chmod 755 $APC_HOME/bin/apcctl
 chmod 755 $APC_HOME/bin/apc_console.py
+chmod 755 $APC_HOME/bin/apc_launcher.py
 chmod 755 $APC_HOME/bin/update-apc-config.py
 chmod 750 $APC_HOME/var/run
 
