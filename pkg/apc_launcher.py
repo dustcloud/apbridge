@@ -43,15 +43,18 @@ def signal_term_handler(signal, frame):
 def read_ntp_sync():
     if not hasattr(read_ntp_sync, "last_err"):
         read_ntp_sync.last_err = 0
-    p = Popen(["ntpq", "-c", "rv"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-    output = p.stdout.read()
-    err = p.stderr.read()
-    if len(err) > 0:
-        # repeated error message is printed only once
-        if err != read_ntp_sync.last_err:
-            log_write(err)
-            read_ntp_sync.last_err = err
-    return output
+    try:
+        p = Popen(["ntpq", "-c", "rv"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        output = p.stdout.read()
+        err = p.stderr.read()
+        if len(err) > 0:
+            # repeated error message is printed only once
+            if err != read_ntp_sync.last_err:
+                log_write(err)
+                read_ntp_sync.last_err = err
+        return output
+    except OSError as e:
+        print "ntpq -c rv failed: ", e
 
 # replace current process with apbridge
 def start_apc(argv):
@@ -77,7 +80,10 @@ def main(argv=None):
     total_wait = 0
     while total_wait < NTP_TIMEOUT:
         ntp_status = read_ntp_sync()
-        if ntp_status.find("sync_ntp") >= 0:
+        if ntp_status == None:
+            # if NTP is not installed, we don't wait
+            break;
+        elif ntp_status.find("sync_ntp") >= 0:
             log_write("NTP synced")
             break;
         time.sleep(POLL_INTERVAL)
