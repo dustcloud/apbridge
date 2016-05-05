@@ -103,7 +103,7 @@ public:
    bool bReconnectSerial;
    bool bGpsdConn;
 
-   CApcProcessInputArguments(): CProcessInputArguments(DEFAULT_FILE_NAME) {
+   CApcProcessInputArguments(): CProcessInputArguments(DEFAULT_FILE_NAME, "APC") {
       sHostName = DEFAULT_MNGR_HOST;
       port = DEFAULT_MNGR_PORT;
       sApiPortName = DEFAULT_DEV_API_PORT;

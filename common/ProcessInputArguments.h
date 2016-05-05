@@ -40,7 +40,7 @@ public:
       log4cxx::LevelPtr logLevel;
    };
 
-   CProcessInputArguments(const std::string& baseName);
+   CProcessInputArguments(const std::string& baseName , const char * hdr = nullptr);
    virtual ~CProcessInputArguments() {;}
    values_s& getDefVal() { return m_defVal; }
    bool parse(int argc, char* argv[], bool isWdClnt = true, bool isHost = false);
@@ -53,6 +53,7 @@ protected:
 
    values_s    m_defVal;
    values_s    m_val;
+   std::string m_hdr;
 
    apiproto_t  str2proto_p(std::string s) const;
 };
