@@ -136,20 +136,20 @@ def getRPCServiceName(serviceDefName):
 class MainCmdArgParser(ArgumentParser) :
    # apphome is the VOYAGER_HOME for voyager and APC_HOME for apc.
    def __init__(self, apphome, desc, appname) :
-      self.apphome = apphome;
+      self.apphome = apphome
       self.appname = appname
       ArgumentParser.__init__(self, description=desc)
       ArgumentParser.add_argument(self, '--api-proto',    help="API protocol", choices = PROTOCOLS, 
                                   default = DEFAULT_PROTO)
-      ArgumentParser.add_argument(self, '--api-ipcpath',  help="Path to IPC files (only for IPC protocol)", 
+      ArgumentParser.add_argument(self, '--api-ipcpath',  help="Path to directory of IPC files (only for IPC protocol)", 
                                   default = DEFAULT_IPCPATH)
-      ArgumentParser.add_argument(self, '--api-host',     help="IP address of RPC server (only for TCP protocol)", 
+      ArgumentParser.add_argument(self, '--api-host',     help="Host or IP address of the RPC server (only for TCP protocol)", 
                                   default = DEFAULT_HOST)
-      ArgumentParser.add_argument(self, '--api-port',     help="Base RPC services port (only for TCP protocol)", 
+      ArgumentParser.add_argument(self, '--api-port',     help="Base port for RPC services (only for TCP protocol)", 
                                   default = DEFAULT_PORT)
       ArgumentParser.add_argument(self, '-c', '--config-file',   help="Configuration file")
-      ArgumentParser.add_argument(self, '-u', '--username', help="System user name")
-      ArgumentParser.add_argument(self, '--password', help="Interactive mode")
+      ArgumentParser.add_argument(self, '-u', '--username', help="User name")
+      ArgumentParser.add_argument(self, '--password', help="Password for user authentication")
       self.errmsg = ''
       
    def parse_args(self) :
