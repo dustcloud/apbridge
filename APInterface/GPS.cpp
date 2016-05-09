@@ -1,10 +1,6 @@
 #include "GPS.h"
 #include "Logger.h"
 
-#include "NTPLeapSec.h"
-#include <time.h>
-#include "6lowpan/public/dn_api_local.h"
-
 const char * LOGGER_NAME = "gps";
 #define RETRY_TIME 5000 // Retry interval if connection with GPS daemon is lost (milliseconds)
 
@@ -114,8 +110,6 @@ void CGPS::readGPSThreadFun()
          }
          else
          {
-
-             dn_utc_time_t   utcTime;
              std::stringstream ss;
 
              /* When the number of satellites in use is greater than our configurable parameter,
@@ -123,26 +117,6 @@ void CGPS::readGPSThreadFun()
              stable for long enough, then we declare that the GPS is sync'ed.
              If the number of satellites in use drops below our configurable parameter, then
              we reset the stable start time (as part of setting our status to GPS_ST_NO_SYNC).*/
-
-             // get time from gps
-             ss.precision(17);
-             ss <<  " receive gps data, timestamp: " << m_lastRecord->online;
-             ss << " utc time in gps: " << m_lastRecord->devices.time << std::endl;
-             ss << " gps status: " << m_lastRecord->status;
-             ss << " skyview time: " << m_lastRecord->skyview_time;
-             ss << " update : " << m_lastRecord->fix.time;
-             DUSTLOG_INFO(LOGGER_NAME, ss.str());
-
-            //Send SetParameter Command with System time to AP
-        	boost::chrono::system_clock::duration mngrUTCDuration = SYSTIME_NOW().time_since_epoch();
-           // Seconds since beginning
-        	utcTime.seconds = TO_SEC(mngrUTCDuration).count() - ntpGetLeapSecs(); 
-        	// Microseconds since last second
-           utcTime.useconds = (uint32_t)TO_USEC((mngrUTCDuration - TO_SEC(mngrUTCDuration))).count(); 
-        	DUSTLOG_INFO(LOGGER_NAME, "system time: utc="<< utcTime.seconds <<"." 
-                    << std::setfill ('0') << std::setw(6) << utcTime.useconds);
-
-         
 
 			if (m_satellites_visible != m_lastRecord->satellites_visible) {
 				setSatellitesVisible(m_lastRecord->satellites_visible);
