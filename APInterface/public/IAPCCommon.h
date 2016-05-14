@@ -14,6 +14,7 @@ struct ap_intf_info_t
    std::string  name;       ///< Name of interface
    std::string  ipAddress;   ///< IP address of APC
    uint16_t     port;       ///< TCP port of APC
+   std::string  swVersion;
 };
 
 struct ap_intf_stat_t

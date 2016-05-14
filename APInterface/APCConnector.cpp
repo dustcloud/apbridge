@@ -99,6 +99,7 @@ CAPCConnector::ptr CAPCConnector::createConnection(const CAPCConnector::init_par
 
 CAPCConnector::CAPCConnector(const init_param_t& param) :
    m_apcName(param.apcConnect),
+   m_swVersion(param.swVersion),
    m_pApcNotif(param.pApcNotif),  
    m_pSerializer(nullptr),
    m_intfId(APINTFID_EMPTY), 
@@ -193,7 +194,7 @@ apc_error_t CAPCConnector::start()
 apc_error_t CAPCConnector::connect(ap_intf_id_t intfId, uint32_t mySeq, uint32_t yourSeq, 
                                    const apc_msg_net_gpslock_s& gpsState, uint32_t netId)
 {
-   apc_msg_connect_s conMsg;
+   apc_msg_connect_s_v1 conMsg;
    m_intfId = intfId;
    m_lastReceivedSeqNum = m_lastReportedSeqNum = yourSeq;
    // Set connection parameters
@@ -204,6 +205,8 @@ apc_error_t CAPCConnector::connect(ap_intf_id_t intfId, uint32_t mySeq, uint32_t
    conMsg.identity[sizeof(conMsg.identity) - 1] = 0;
    conMsg.gpsstate = gpsState;
    conMsg.netId = netId;
+   strncpy(conMsg.version, m_swVersion.c_str(), sizeof(conMsg.version));
+   conMsg.version[sizeof(conMsg.version) - 1] = 0;
 
    return sendData(APC_CONNECT, 0, mySeq, (const uint8_t *)&conMsg, sizeof(conMsg), NULL, 0);
 }
@@ -525,10 +528,13 @@ apc_error_t CAPCConnector::messageReceived(ap_intf_id_t apcId, apc_msg_type_t ty
       m_isConnected = true;
       if (m_pApcNotif) {
          apc_msg_connect_s * pConnect = (apc_msg_connect_s *)pPayload;
+         string              swVersion = "N/A";
+         if (size >= sizeof(apc_msg_connect_s_v1))
+            swVersion = ((apc_msg_connect_s_v1 *)pPayload)->version;
          m_peerIntfName = pConnect->identity;
          DUSTLOG_INFO(m_log, "CAPCConnector #" << m_intfId  << " Peer name: '" << m_peerIntfName << "'");
          m_pApcNotif->apcConnected(p, pConnect->ver, pConnect->netId,
-            pConnect->sesId,  pConnect->identity, flags, mySeq, yourSeq);
+            pConnect->sesId,  pConnect->identity, flags, mySeq, yourSeq, swVersion);
       }
       //[ ---- Start Keep alive timers after receiving CONNECT back from Manager
       if (m_kaTxTimer != nullptr) {

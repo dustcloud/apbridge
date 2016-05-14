@@ -22,7 +22,8 @@ public:
    // IAPCCtrl interface
    virtual void apcStarted(CAPCConnector::ptr pAPC);
    virtual void apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t apcId, 
-                           const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq);
+                           const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
+                           const std::string swVersion);
    virtual void apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopflags_t flags,
                               apc_stop_reason_t reason, uint32_t maxAllocOutPkt);
    virtual void messageReceived(ap_intf_id_t apcId, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
@@ -53,7 +54,8 @@ protected:
             char           name[APC_CONNECTOR_NAME_LENGTH+1];
             uint8_t        flags;
             uint32_t       mySeq;
-            uint32_t       yourSeq;         
+            uint32_t       yourSeq; 
+            char           version[SIZE_STR_VER];
          }                 m_connect;
          struct {
             CAPCConnector::stopflags_t flags;

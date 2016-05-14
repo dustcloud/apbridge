@@ -1,5 +1,6 @@
 #include "APCClient.h"
 using namespace std;
+#include "common/Version.h"
 
 CAPCClient::CAPCClient(uint32_t  cacheSize) : m_cache( cacheSize)
 {
@@ -257,7 +258,7 @@ void CAPCClient::apcStarted(CAPCConnector::ptr pAPC)
 
 // Process Connect notification from CAPCConnector
 void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t intfId, 
-                           const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq)
+                           const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, const string swVersion)
 {
    bool        isNewConnection = false;
    apc_error_t res = APC_OK;
@@ -472,7 +473,8 @@ CAPCConnector::ptr CAPCClient::ipConnect_p(string& errMsg)
 
    CAPCConnector::init_param_t connectorParam = {
       m_intfName, &m_IOService, &m_notifThread, m_kaTimeout, 
-      m_freeBufTimeout, (uint32_t)(m_cache.getCacheSize() * 0.75), m_logName 
+      m_freeBufTimeout, (uint32_t)(m_cache.getCacheSize() * 0.75), m_logName,
+      getVersionLabel(),
    };
 
    pAPC = CAPCConnector::createConnection(connectorParam);

@@ -6,6 +6,9 @@
  * Definitions and data structures for the Manager-APC Protocol
  */
 
+// Max size of string representation of software version
+const uint32_t SIZE_STR_VER = 80;
+
 // Protocol version
 const uint8_t  APC_PROTO_VER = 0;
 
@@ -89,6 +92,20 @@ struct apc_msg_connect_s
    uint32_t sesId;         ///< Unique session id assigned by the Manager. . 0 - used client for start new session
    apc_msg_net_gpslock_s gpsstate; ///< GPS lock status 
    uint32_t netId;         /// < Network ID (send by manager to APC)
+};
+
+/**
+ * APC_CONNECT. APC connection message
+ */
+struct apc_msg_connect_s_v1
+{
+   uint8_t  ver;           ///< APC protocol version. 0=initial version
+   uint32_t flags;         ///< Reserved; Set to 0.
+   char     identity[32];  ///< String that uniquely describes the sender
+   uint32_t sesId;         ///< Unique session id assigned by the Manager. . 0 - used client for start new session
+   apc_msg_net_gpslock_s gpsstate; ///< GPS lock status 
+   uint32_t netId;         ///< Network ID (send by manager to APC)
+   char     version[SIZE_STR_VER];   ///< APC/ Manger software version
 };
 
 /**

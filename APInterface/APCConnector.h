@@ -92,10 +92,11 @@ public:
       uint32_t                     freeBufTimeout; ///< Max timeout waiting free packet (milliseconds)
       uint32_t                     unconfirmedInpPkt; ///< Max number of unreported input numbers
       std::string                  logName;        ///< Name of logger
+      std::string                  swVersion;      ///< string with software version
       void clear() {
          pIOService = NULL; pApcNotif = NULL; 
          kaTimeout = 0;
-         apcConnect.clear(); logName.clear();
+         apcConnect.clear(); logName.clear(); swVersion.clear();
       }
    };
 
@@ -251,7 +252,8 @@ private:
    };
 
    std::string      m_apcName;                     // Name of connector owner
-   IAPCConnectorNotif * m_pApcNotif;                 // Interface to APC notification system
+   std::string      m_swVersion;                   // Software version
+   IAPCConnectorNotif * m_pApcNotif;               // Interface to APC notification system
    CAPCSerializer * m_pSerializer;                 // Serialize / de-serialize one message
    ap_intf_id_t     m_intfId;                      // APC Interface ID
    bool             m_isWorking;                   // Flag - Connecter is working
@@ -334,7 +336,8 @@ public:
     * \param   name  Name of other side of connection
     */
    virtual void apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t apcId, 
-                             const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq) = 0;
+                             const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
+                             const std::string swVersion) = 0;
 
    /**
     * AP disconnect notification.

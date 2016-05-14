@@ -106,7 +106,8 @@ void    CAPCCtrlNotifThread::threadFun()
                                          pNotif->m_param.m_connect.name,
                                          pNotif->m_param.m_connect.flags,
                                          pNotif->m_param.m_connect.mySeq,
-                                         pNotif->m_param.m_connect.yourSeq);
+                                         pNotif->m_param.m_connect.yourSeq,
+                                         pNotif->m_param.m_connect.version);
             break;
          case APC_DISCONNECT:
             m_pExtrnAPCNotif->apcDisconnected(pNotif->m_apc, 
@@ -155,7 +156,7 @@ void CAPCCtrlNotifThread::apcStarted(CAPCConnector::ptr pAPC)
 }
 
 void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t apcId, 
-                                     const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq)
+                                     const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, const string swVersion)
 {
    boost::unique_lock<boost::mutex> lock(m_lock);
    if (!m_isWork)
@@ -168,11 +169,12 @@ void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, ui
    pNotif->m_param.m_connect.netId   = netId;
    pNotif->m_param.m_connect.apcId   = apcId; 
    strncpy(pNotif->m_param.m_connect.name, name, sizeof(pNotif->m_param.m_connect.name));
-   pNotif->m_param.m_connect.name[sizeof(pNotif->m_param.m_connect.name)-1] = 0;
+   pNotif->m_param.m_connect.name[sizeof(pNotif->m_param.m_connect.name) - 1] = 0;
    pNotif->m_param.m_connect.flags = flags;
    pNotif->m_param.m_connect.mySeq   = mySeq;
    pNotif->m_param.m_connect.yourSeq = yourSeq;
-
+   strncpy(pNotif->m_param.m_connect.version, swVersion.c_str(), sizeof(pNotif->m_param.m_connect.version));
+   pNotif->m_param.m_connect.version[sizeof(pNotif->m_param.m_connect.version) - 1] = 0;
    insertNotif_p(pNotif);
 }
 
