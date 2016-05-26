@@ -240,6 +240,7 @@ void CAPCoupler::handleAPReboot()
    DUSTLOG_INFO(m_logname, "AP Reboot");
    sendGetNetId();
    m_apConnected = true;
+   sendGetApAppInfo();
    sendEvent_p(E_APM_REBOOT);
    m_apInfo.apState = DN_API_ST_IDLE;
 }
