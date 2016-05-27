@@ -32,7 +32,7 @@ PROCESSLIST = ['configdb', 'authmanager', 'manager']
 
 NOTIF_CATEGORY_DICT = {
     'DATA':   ["dataPacketReceived", "ipPacketReceived"],
-    'EVENTS': ["alarmOpened", "alarmClosed", "cmdFinished", "invalidMIC", "joinFailed", "moteStateChanged", "pathStateChanged", "pathAlert", "serviceChanged", "packetSent", "pingResponse", "optPhase", "managerStopping", "managerStarted"],
+    'EVENTS': ["alarmOpened", "alarmClosed", "cmdFinished", "invalidMIC", "joinFailed", "moteStateChanged", "pathStateChanged", "pathAlert", "serviceChanged", "packetSent", "pingResponse", "optPhase", "managerStopping", "managerStarted", "minNumParentsChanged"],
     'HR':     ["deviceHealthReport", "discoveryHealthReport", "neighborHealthReport", "rawMoteNotification"],
     'CONFIG': ["configChanged", "configDeleted", "configLoaded", "configRestored"],
 }
