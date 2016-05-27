@@ -103,6 +103,9 @@ public:
    bool bReconnectSerial;
    bool bGpsdConn;
 
+   std::string sApClkSource;
+   EAPClockSource apClkSource;
+
    CApcProcessInputArguments(): CProcessInputArguments(DEFAULT_FILE_NAME, "APC") {
       sHostName = DEFAULT_MNGR_HOST;
       port = DEFAULT_MNGR_PORT;
@@ -139,6 +142,9 @@ public:
 	  sResetSignal = RESET_SIGNAL_TX;
 	  bReconnectSerial = true;
 	  bGpsdConn = false;
+
+      apClkSource = NONE;
+
    }
 protected:
    virtual void add_options(boost::program_options::options_description& desc) {
@@ -174,6 +180,7 @@ protected:
       ("reset-signal", boost::program_options::value<string>(&sResetSignal), "Signal used to reset AP")
       ("reconnect-serial", boost::program_options::value<bool>(&bReconnectSerial), "Reconnect serial port on errors")
       ("max-packet-age", boost::program_options::value<uint32_t>(&maxPacketAge), "Maximim age allowed for packets wait in queue before triggering PAUSE to manager, in milliseconds")
+      ("ap-clock-source", boost::program_options::value<string>(&sApClkSource), "AP Clock Source, choice of INTERNAL, NETWORK or PPS")
       ;
    }
    virtual void process(boost::program_options::variables_map &vm) { 
@@ -183,6 +190,14 @@ protected:
       if (sResetSignal != RESET_SIGNAL_TX && 
           sResetSignal != RESET_SIGNAL_DTR) {
          throw boost::program_options::error("Invalid reset-signal value, must be TX or DTR.");
+      }
+
+      if (!sApClkSource.empty()) {
+          if (!toEnum(sApClkSource.c_str(), apClkSource)) {
+             ostringstream errStr;
+             errStr << "Invalid ap-clock-source value " << sApClkSource << ", must be INTERNAL, NETWORK or PPS.";
+             throw boost::program_options::error(errStr.str());
+          }
       }
    }
 };
@@ -345,7 +360,8 @@ try
       gpsCfg,
       inputArgs.resetBootTimeout,
       inputArgs.disconnectShortBootTimeoutMsec,
-      inputArgs.disconnectLongBootTimeoutMsec
+      inputArgs.disconnectLongBootTimeoutMsec,
+      inputArgs.apClkSource
    };
   
    result = coupler.open(apm_init_params);

@@ -58,6 +58,7 @@ CAPCoupler::CAPCoupler(boost::asio::io_service& io_service) :
      m_hwResetTimeoutMsec(0),
      m_disconnectTimeoutShortMsec(0),
      m_disconnectTimeoutLongMsec(0),
+     m_resetAp(false),
      m_logname(CLIENT_LOG),
      m_cur_gps_status(GPS_ST_NO_DEVICE),
      m_events(0),
@@ -101,6 +102,7 @@ apc_error_t CAPCoupler::open(init_param_t& init_params)
    m_hwResetTimeoutMsec         = init_params.resetBootTimeoutMsec;
    m_disconnectTimeoutShortMsec = init_params.disconnectShortBootTimeoutMsec;
    m_disconnectTimeoutLongMsec  = init_params.disconnectLongBootTimeoutMsec;
+   m_apClkSource                = init_params.apClkSource;
    
    //m_smThread = new boost::thread(boost::bind(&CAPCoupler::smThreadFun_p, this));
    return APC_OK;
@@ -227,6 +229,7 @@ void CAPCoupler::handleAPLost()
 
 void CAPCoupler::handleAPBoot()
 {
+   sendGetApClkSource();
    sendGetNetId();
    m_apConnected = true;
    sendGetApAppInfo();
@@ -238,7 +241,9 @@ void CAPCoupler::handleAPBoot()
 void CAPCoupler::handleAPReboot()
 {
    DUSTLOG_INFO(m_logname, "AP Reboot");
+   sendGetApClkSource();
    sendGetNetId();
+   sendGetApAppInfo();
    m_apConnected = true;
    sendGetApAppInfo();
    sendEvent_p(E_APM_REBOOT);
@@ -368,8 +373,28 @@ void CAPCoupler::handleParamClkSrc(const dn_api_rsp_get_ap_clksrc_t& getClkSrc)
 {
    memcpy(&m_apInfo.clksource, &getClkSrc.apClkSrc, sizeof(m_apInfo.clksource));
 
+   if (m_apClkSource == DN_API_AP_CLK_SOURCE_INTERNAL ||
+       m_apClkSource == DN_API_AP_CLK_SOURCE_NETWORK ||
+       m_apClkSource == DN_API_AP_CLK_SOURCE_PPS) {
+       if (m_apClkSource != m_apInfo.clksource) {
+           // need to change clock source, since package may need retry,
+           // we need to read back the clock source
+           m_resetAp = true;
+           DUSTLOG_INFO(m_logname, "AP clock source mismatch, current: " <<
+                     toString((EAPClockSource)m_apInfo.clksource, true) <<
+                     ", config: " << toString(m_apClkSource, true));
+           sendSetApClkSource(m_apClkSource);
+           sendGetApClkSource();
+       } else if (m_resetAp) {
+           m_resetAp = false;
+           DUSTLOG_INFO(m_logname, "Reset AP for new clock source");
+           resetAP();  // send E_AP_RESET event
+       }
+   }
+
    //Clock Source is external then start reading from GPS daemon
-   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_PPS)
+   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_PPS && 
+       (m_apClkSource == PPS || m_apClkSource == NONE))
    {
       //connect to GPS only if the command line option gpsd-conn is set to true
       if (m_gps_start_param.m_gpsd_conn) {
@@ -543,6 +568,11 @@ apc_error_t CAPCoupler::sendGetApStatus()
 apc_error_t CAPCoupler::sendGetNetId()
 {
    return sendGetParam(DN_API_PARAM_NETID);
+}
+
+apc_error_t CAPCoupler::sendGetApClkSource()
+{
+   return sendGetParam(DN_API_PARAM_AP_CLKSRC);
 }
 
 apc_error_t CAPCoupler::sendGetParam(uint8_t paramId)

@@ -55,7 +55,6 @@ struct gps_info_t {
    uint16_t satellites_used;    ///< number of satellites used
 };
 
-
 /**
  * AP Coupler
  *
@@ -78,6 +77,7 @@ public:
       uint32_t                    resetBootTimeoutMsec;
       uint32_t                    disconnectShortBootTimeoutMsec;
       uint32_t                    disconnectLongBootTimeoutMsec;
+      EAPClockSource              apClkSource;
    };
 
    CAPCoupler(boost::asio::io_service& io_service);
@@ -169,6 +169,7 @@ private:
    apc_error_t sendGetApAppInfo();
    apc_error_t sendGetApStatus();
    apc_error_t sendGetNetId();
+   apc_error_t sendGetApClkSource();
    apc_error_t sendGetParam(uint8_t paramId);
    apc_error_t sendSetParam(uint8_t paramId, const uint8_t* data, size_t length);
    // Send current Manager time to AP
@@ -207,6 +208,8 @@ private:
    uint32_t       m_hwResetTimeoutMsec;         // Timeout after hardware reset
    uint32_t       m_disconnectTimeoutShortMsec; // Short timeout after disconnect command
    uint32_t       m_disconnectTimeoutLongMsec;  // Long timeout after disconnect command
+   EAPClockSource m_apClkSource;                // AP clock source
+   bool           m_resetAp;                    // need to reset AP because of clock source change?
 
    std::string m_logname;
    IAPCClient::open_param_t   m_client_open_param;  ///< Client open parameters 
