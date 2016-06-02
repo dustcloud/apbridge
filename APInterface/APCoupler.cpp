@@ -58,6 +58,7 @@ CAPCoupler::CAPCoupler(boost::asio::io_service& io_service) :
      m_hwResetTimeoutMsec(0),
      m_disconnectTimeoutShortMsec(0),
      m_disconnectTimeoutLongMsec(0),
+     m_apClkSource(INTERNAL),
      m_resetAp(false),
      m_logname(CLIENT_LOG),
      m_cur_gps_status(GPS_ST_NO_DEVICE),
