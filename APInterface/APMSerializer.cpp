@@ -10,11 +10,15 @@
 #include <algorithm>
 #include <sstream>
 
+const uint16_t APM_MAX_BOOT_EVENTS = 10; // continuous BOOT event means AP didn't received our BOOT ACK,
+                                                // we need to reset AP to restore communication
+
 CAPMSerializer::CAPMSerializer(size_t maxMsgSize, IAPMNotifHandler* notifHandler)
    : m_notifHandler(notifHandler),
      m_inputBuffer(maxMsgSize),
      m_bytesReceived(0),
-     m_bytesExpected(sizeof(apt_hdr_s))
+     m_bytesExpected(sizeof(apt_hdr_s)),
+     m_bootCounter(0)
 { ; }
 
 CAPMSerializer::~CAPMSerializer() { ; }
@@ -131,6 +135,11 @@ apc_error_t CAPMSerializer::handleCmd(uint8_t cmdId, const uint8_t* data, size_t
 {
    uint8_t* payload = const_cast<uint8_t*>(data);
    // parse the payload
+
+   if (cmdId != DN_API_LOC_NOTIF_EVENTS) {
+       // we only count continuous BOOT event
+       m_bootCounter = 0;
+   }
    switch (cmdId) {
    case DN_API_LOC_NOTIF_EVENTS:
    {
@@ -141,8 +150,15 @@ apc_error_t CAPMSerializer::handleCmd(uint8_t cmdId, const uint8_t* data, size_t
          pMsg->events = ntohl(pMsg->events);
          pMsg->alarms = ntohl(pMsg->alarms);
          if (pMsg->events & DN_API_LOC_EV_BOOT) {
-            m_notifHandler->handleAPBoot();
+            m_bootCounter++;
+            if (m_bootCounter > APM_MAX_BOOT_EVENTS) {
+                m_bootCounter = 0;
+                m_notifHandler->handleAPLost();
+            } else {
+                m_notifHandler->handleAPBoot();
+            }
          } else {
+            m_bootCounter = 0;
             m_notifHandler->handleEvent(*pMsg);
          }
       } else {
@@ -270,3 +286,4 @@ CAPMSerializer::convert(converttype_t convertType, uint8_t cmdId,
    //}
    return res;
 }
+
