@@ -316,10 +316,9 @@ class CommandLineHandler(cmd.Cmd):
            ap        -- set AP parameters
                         [args] is a parameter followed by value
                                parameter are
-                                   - macAddr
-                                   - txPower
-                                   - joinKey
-                                   - apClkSource
+                                   - clkSrc
+                                   - jkey
+                                   - txpwr
                                value is parameter dependent
            loglevel  -- set loglevel for a logger
                         [args] is a logger followed by severity
@@ -361,18 +360,18 @@ class CommandLineHandler(cmd.Cmd):
     def do_get(self, *args):
        ''' Usage: get <ap|apc> [args]
            ap        -- get AP parameters
-                        [args] are - macAddr
-                                   - networkId
-                                   - txPower
-                                   - apInfo
-                                   - time
-                                   - apClkSource
+                        [args] are - apInfo
                                    - apStatus
+                                   - clkSrc
+                                   - macAddr
+                                   - netid
+                                   - time
+                                   - txpwr
            apc       -- get APC parameters
-                        [args] are - managerHost
-                                   - managerPort
-                                   - clientId
+                        [args] are - clientId
                                    - gpsState
+                                   - managerHost
+                                   - managerPort
        '''
        cmdArgs = args[0].split(" ")
 
