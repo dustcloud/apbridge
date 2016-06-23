@@ -22,7 +22,7 @@ public:
          m_logExp = 20; // log expiration messages for a short time
       }
       if (m_logExp > 0) {
-         DUSTLOG_INFO(rpclogger::RPC_SERVER_NAME, "isExpired: detected expiration now=" << now << ", exp=" << m_expiration);
+         DUSTLOG_DEBUG(rpclogger::RPC_SERVER_NAME, "isExpired: detected expiration now=" << now << ", exp=" << m_expiration);
          m_logExp--;
       }
       return m_expiration < now;
@@ -33,7 +33,7 @@ public:
       mngr_time_t now = TIME_NOW();
       m_expiration = now + msec_t(offset);
       if (m_logExp > 0) {
-         DUSTLOG_INFO(rpclogger::RPC_SERVER_NAME, "setExpired: updating expiration now=" << now << ", offset=" << offset);
+         DUSTLOG_DEBUG(rpclogger::RPC_SERVER_NAME, "setExpired: updating expiration now=" << now << ", offset=" << offset);
          m_logExp--;
       }
    }
