@@ -28,8 +28,8 @@ command_line_vars.AddVariables(
     ('tools_prefix', "Path to headers and libraries for runtime components", ''),
     ('boost_prefix', "Path for the Boost headers and libraries", ''),
     ('boost_lib_suffix', "Suffix for the Boost libraries", ''),
-    ('python',
-     '''Path to python. Defaults to \Python27 on Windows, /usr/bin/python on Linux.''', 'python'),
+    ('python', '''Path to python. Defaults to python from scons PATH.''', 'python'),
+    ('protoc', '''Path to protobuf compiler, protoc. Defaults to protoc from scons PATH.''', 'protoc'),
     ('publish_dir', 'Directory for publishing released artifacts', ''),
     ('repository_dir', "Directory to store the .deb file", '/mnt/sdev/repo_scripts'),
     EnumVariable('target', 'Choose target platform', 'i686',
@@ -153,8 +153,8 @@ def getLinuxEnv(baseEnv):
                    '-Wl,-rpath,$TOOLS_DIR/lib'],
     )
 
-    # Compile actions for various intermediate languages
-    env['PROTOC'] = os.path.join('/tools', 'bin', 'protoc') # TODO: use tools_root
+    # Compile actions for protobuf messages
+    env['PROTOC'] = env['protoc']
     env['PROTOBUFCOM_DST'] = '$BUILD_DIR'
     env['PROTOBUFCOM'] = 'LD_LIBRARY_PATH=$TOOLS_DIR $PROTOC -I. -I$BUILD_DIR --proto_path=$BUILD_DIR --cpp_out=$PROTOBUFCOM_DST $SOURCE' # -I$SOURCE.dir --cpp_out=$TARGET.dir
 
