@@ -195,7 +195,8 @@ public:
    * \param stopFlags   The stop flags.
    */
 
-  void      stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t stopFlags, bool isFinishWriting = true);
+  void      stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t stopFlags, 
+                 bool isFinishWriting = true, bool isSendNotif = true);
 
   /**
    * Send a message to the other side of the APC Connection

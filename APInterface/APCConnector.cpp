@@ -220,7 +220,8 @@ void CAPCConnector::disconnect()
 }
 
 // Closes all processes (receiving, KA) and socket
-void CAPCConnector::stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t stopFlags, bool isFinishWriting)
+void CAPCConnector::stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t stopFlags, 
+                         bool isFinishWriting, bool isSendNotif)
 {
    boost::unique_lock<boost::mutex> lock(m_lock); //lock after non working 
    ptr p = shared_from_this();
@@ -267,7 +268,7 @@ void CAPCConnector::stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t 
    m_isConnected = false;
 
    // Send 'apcDisconnect' notification
-   if (m_pApcNotif) {
+   if (isSendNotif && m_pApcNotif) {
       if (m_forceDisconnect) {
          stopFlags = (stopflags_t)((uint32_t)stopFlags & ~STOP_FL_OFFLINE);
          stopFlags = (stopflags_t)((uint32_t)stopFlags | STOP_FL_DISCONNECT);
