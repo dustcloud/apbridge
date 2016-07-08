@@ -6,8 +6,6 @@ import os
 import fnmatch
 import shutil
 
-DEFAULT_RELEASE_PUBLISH_DIR = '/mnt/engineering/'
-
 # ----------------------------------------------------------------------
 # Calculate package version
 #
@@ -71,9 +69,6 @@ elif env['PLATFORM'] in ('armpi-linux',):
 else:
     raise SCons.Errors.UserError('unknown target platform: ' + env['PLATFORM'])
 
-if not env['publish_dir'] :
-    env['publish_dir'] = DEFAULT_RELEASE_PUBLISH_DIR
-
 env.Replace(
     PKG_NAME       = 'dust-apbridge',
     PKG_ROOT       = 'pkg',
@@ -86,9 +81,6 @@ env.Replace(
     VERSION_SUFFIX = 'env', 
     VERSION_MODULE = 'apbridge_version',
     VERSION_ATTR   = 'VERSION',
-
-    # publish
-    publish_dir = os.path.join(env['publish_dir'], 'Software', 'Builds', 'Voyager'),
 )
 
 generate_pkg_version(env, env['PKG_NAME'])

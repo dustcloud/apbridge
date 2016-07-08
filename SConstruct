@@ -13,6 +13,17 @@ from SCons.Errors import UserError
 sys.path += [os.path.join(os.getcwd(), 'scripts'),]
 
 # ----------------------------------------------------------------------
+# Defaults
+
+# The publish_dir is a directory where release packages are copied.
+# This is used internally for Dust development.
+DEFAULT_PUBLISH_DIR = ''  # defaults to current directory
+
+# The repository_dir is a Debian repository directory where release packages
+# are copied. This is used internally for Dust development.
+DEFAULT_REPOSITORY_DIR = ''
+
+# ----------------------------------------------------------------------
 # Base setup, command line options
 
 command_line_vars = Variables()
@@ -30,8 +41,8 @@ command_line_vars.AddVariables(
     ('boost_lib_suffix', "Suffix for the Boost libraries", ''),
     ('python', '''Path to python. Defaults to python from scons PATH.''', 'python'),
     ('protoc', '''Path to protobuf compiler, protoc. Defaults to protoc from scons PATH.''', 'protoc'),
-    ('publish_dir', 'Directory for publishing released artifacts', ''),
-    ('repository_dir', "Directory to store the .deb file", '/mnt/sdev/repo_scripts'),
+    ('publish_dir', 'Directory for publishing released artifacts', DEFAULT_PUBLISH_DIR),
+    ('repository_dir', "Directory to store the .deb file", DEFAULT_REPOSITORY_DIR),
     EnumVariable('target', 'Choose target platform', 'i686',
                  allowed_values=('i686', 'x86_64', 'armpi')),
 )
@@ -263,6 +274,10 @@ env.Append(CPPPATH=['#',
                     os.path.join('#', env['BUILD_DIR'], 'rpc'),
                     os.path.join('#', env['BUILD_DIR'], 'public'),
                     ])
+
+# Configure the destination directory for published artifacts
+if not env['publish_dir']:
+    env['publish_dir'] = DEFAULT_PUBLISH_DIR
 
 # Targets for release distribution
 env['DIST_TARGETS'] = {}
