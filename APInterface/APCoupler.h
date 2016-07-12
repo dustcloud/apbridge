@@ -114,7 +114,7 @@ public:
    
    // IAPCClientNotif
 
-   virtual void connected(const std::string server);
+   virtual void connected(const std::string server, uint32_t flags);
    virtual void disconnected(apc_stop_reason_t  reason);
    virtual void dataRx(const ap_intf_sendhdr_t& hdr, const uint8_t * pPayload, uint32_t size);
    virtual void resume();
@@ -203,6 +203,7 @@ private:
    CAPMTransport* m_transport;   ///< pointer to the APM Transport
    IAPCClient*    m_mngrClient;  ///< interface to the APCClient
    IGPS*          m_gps;         ///< interface to the GPS
+   bool           m_isIntClk;    ///< Set Internal Clock Source to AP
    bool           m_apConnected;
    // Timeout for wait Boot / Re-boot event
    uint32_t       m_hwResetTimeoutMsec;         // Timeout after hardware reset

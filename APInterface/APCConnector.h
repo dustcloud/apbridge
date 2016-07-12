@@ -164,10 +164,11 @@ public:
    *
    * \return   result of operation
    */
-  apc_error_t connect(ap_intf_id_t sesId, uint32_t mySeq, uint32_t yourSeq, const apc_msg_net_gpslock_s& gpsState, uint32_t netId); // = {APINTF_GPS_NOLOCK});
-  apc_error_t connect(ap_intf_id_t sesId, uint32_t mySeq, uint32_t yourSeq, uint32_t netId) {
+  apc_error_t connect(ap_intf_id_t sesId, uint32_t mySeq, uint32_t yourSeq, 
+                     const apc_msg_net_gpslock_s& gpsState, uint32_t netId, uint32_t flags = 0); 
+  apc_error_t connect(ap_intf_id_t sesId, uint32_t mySeq, uint32_t yourSeq, uint32_t netId, uint32_t flags = 0) {
      apc_msg_net_gpslock_s gpsState = {APINTF_GPS_NOLOCK};
-     return connect(sesId, mySeq, yourSeq, gpsState, netId);
+     return connect(sesId, mySeq, yourSeq, gpsState, netId, flags);
   }
 
   /**
@@ -322,6 +323,33 @@ private:
 class IAPCConnectorNotif 
 {
 public:
+   struct param_connected_s {
+      uint32_t       ver; 
+      uint32_t       netId;
+      ap_intf_id_t   apcId; 
+      char           name[APC_CONNECTOR_NAME_LENGTH+1];
+      uint32_t       cmdFlags;
+      uint8_t        hdrFlags;
+      uint32_t       mySeq;
+      uint32_t       yourSeq; 
+      char           version[SIZE_STR_VER];
+   };
+
+   struct param_disconnected_s {
+      CAPCConnector::stopflags_t flags;
+      apc_stop_reason_t          reason;
+      uint32_t                   maxAllocOutPkt;
+   };
+
+   struct param_received_s {
+      ap_intf_id_t   apcId;
+      uint8_t        flags;
+      uint32_t       mySeq;
+      uint32_t       yourSeq;
+      apc_msg_type_t type;
+   };
+
+
    virtual ~IAPCConnectorNotif () {;};
 
    /**
@@ -336,9 +364,7 @@ public:
     *
     * \param   name  Name of other side of connection
     */
-   virtual void apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t apcId, 
-                             const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
-                             const std::string swVersion) = 0;
+   virtual void apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param) = 0;
 
    /**
     * AP disconnect notification.
@@ -348,8 +374,7 @@ public:
     * \param   reason         Reason for disconnection       
     * \param   maxAllocOutPkt Number of used output buffers
     */
-   virtual void apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopflags_t flags,
-                                apc_stop_reason_t reason, uint32_t maxAllocOutPkt) = 0;
+   virtual void apcDisconnected(CAPCConnector::ptr pAPC, param_disconnected_s& param) = 0;
 
    /**
     * Data receive notification
@@ -359,8 +384,7 @@ public:
     * \param   pPayload The payload.
     * \param   size     The size.
     */
-   virtual void messageReceived(ap_intf_id_t apcId, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
-                                apc_msg_type_t type, const uint8_t * pPayload, uint16_t size) = 0;
+   virtual void messageReceived(param_received_s& param, const uint8_t * pPayload, uint16_t size) = 0;
 
 };
 

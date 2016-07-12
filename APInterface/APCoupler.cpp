@@ -21,7 +21,7 @@
 #include "6lowpan/public/dn_api_local.h"
 #include "6lowpan/public/dn_api_net.h" //For Clock Source Constants
 #include "common/IChangeNodeState.h"
-
+#include "APCProto.h"
 
 // Manage the protocol with the AP, integrate with AP Connector
 
@@ -54,6 +54,7 @@ CAPCoupler::CAPCoupler(boost::asio::io_service& io_service) :
      m_transport(nullptr),
      m_mngrClient(nullptr),
      m_gps(nullptr),
+     m_isIntClk(false),
      m_apConnected(false),
      m_hwResetTimeoutMsec(0),
      m_disconnectTimeoutShortMsec(0),
@@ -94,6 +95,7 @@ apc_error_t CAPCoupler::open(init_param_t& init_params)
    
    // Save GPS configuration
    m_gps = init_params.gps;
+   m_isIntClk = false;
    m_gps_start_param = init_params.gpsCfg;
 
    m_gps_info.satellites_used = 0;
@@ -116,6 +118,8 @@ void CAPCoupler::start()
 
 void CAPCoupler::stop()
 {
+   m_isIntClk = false;
+
    if (m_smThread != nullptr) {
       sendEvent_p(E_STOP);
       m_smThread->join();
@@ -136,15 +140,17 @@ void CAPCoupler::stop()
 
 // IAPCClientNotif -- input from APC
 
-void CAPCoupler::connected(std::string server)
+void CAPCoupler::connected(std::string server, uint32_t flags)
 {
-   DUSTLOG_INFO(m_logname, "Connected to "<< server);
+   DUSTLOG_INFO(m_logname, "Connected to "<< server << " flags: " << flags);
+   m_isIntClk = (flags & APC_FL_INTSYNCH_AP) == APC_FL_INTSYNCH_AP;
    sendEvent_p(E_MNGR_CONNECT);
 }
 
 void CAPCoupler::disconnected(apc_stop_reason_t reason)
 {
    DUSTLOG_INFO(m_logname, "Disconnect: "<< toString(reason));
+   m_isIntClk = false;
    sendEvent_p(E_MNGR_DISCONNECT);
 }
 

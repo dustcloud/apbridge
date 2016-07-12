@@ -86,15 +86,10 @@ private:
    bool                disconnect_p();
 
    //[ IAPCConnectorNotif interface ------------------------------------------------------------------
-   virtual void  messageReceived(ap_intf_id_t apcId, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
-                                       apc_msg_type_t type, const uint8_t * pPayload, uint16_t size);
-
    virtual void apcStarted(CAPCConnector::ptr pAPC);
-   virtual void apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t apcId, 
-                           const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
-                           const std::string swVersion);
-   virtual void apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopflags_t flags,
-                                apc_stop_reason_t reason, uint32_t maxAllocOutPkt);
+   virtual void apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param);
+   virtual void apcDisconnected(CAPCConnector::ptr pAPC, param_disconnected_s& param);
+   virtual void messageReceived(param_received_s& param, const uint8_t * pPayload, uint16_t size);
 
 };
 
