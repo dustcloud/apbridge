@@ -57,6 +57,7 @@ PACKED_START /** all structures that follow are packed */
 #define DN_API_NET_CMD_SET_ADV_TIME              0x25      ///< Set min time between advertisement packet (msec)
 #define DN_API_NET_CMD_READ_CLK_SRC_STATUS       0x26      ///< Identifier of the "read clock source status" command. 
 #define DN_API_NET_CMD_READ_LINK_EXT             0x27      ///< Identifier of the "read link extended" command.
+#define DN_API_NET_CMD_PROMOTE_APM               0x28      ///< Identifier of the "promote APM" command.
 /**
 \}
 */
@@ -201,6 +202,7 @@ typedef enum {
 #define DN_API_AP_CLK_SOURCE_INTERNAL  0
 #define DN_API_AP_CLK_SOURCE_NETWORK   1
 #define DN_API_AP_CLK_SOURCE_PPS       2
+#define DN_API_AP_CLK_SOURCE_AUTO      3
 
 #define DN_API_AP_NUM_RAND_BYTES    64
 
@@ -209,6 +211,9 @@ typedef enum {
 
 // Extended health reports
 #define DN_API_TLV_REPORT_RSSI  0x1
+#define DN_API_TLV_REPORT_TOF   0x2
+
+
 #define DN_API_MAX_SUPPORTED_MAC_CHANNELS   15
 
 // common link definition
@@ -479,6 +484,9 @@ typedef dn_api_rc_rsp_t  dn_api_net_echo_resp_t;
 
 // DN_API_NET_REFRESH_ADV - refresh advertisement payload - empty request
 typedef dn_api_rc_rsp_t dn_api_net_rsp_refresh_adv_t;
+
+// DN_API_NET_PROMOTE_APM - promote APM payload - empty request
+typedef dn_api_rc_rsp_t dn_api_net_rsp_promote_apm_t;
 
 // ======================== OTAP ==============================================
 // OTAP File Header
