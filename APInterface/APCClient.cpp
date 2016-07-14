@@ -263,6 +263,13 @@ void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param)
    {
       boost::unique_lock<boost::mutex> lock(m_lock);
 
+      if (param.ver == 0 || param.ver > APC_PROTO_VER) {
+         // Request for disconnection. Close current session 
+         pAPC->stop(APC_STOP_VER, APC_ERR_PROTOCOL, CAPCConnector::STOP_FL_DISCONNECT);
+         DUSTLOG_ERROR(m_logName, "CAPCClient #" << m_intfId << " Wrong version of protocol " << param.ver);
+         return;
+      }
+
       if (param.apcId == APINTFID_EMPTY || (m_intfId != APINTFID_EMPTY && param.apcId != m_intfId)) {
          // Request for disconnection. Close current session 
          pAPC->stop(APC_STOP_RECONNECTION, APC_ERR_PROTOCOL, CAPCConnector::STOP_FL_DISCONNECT);

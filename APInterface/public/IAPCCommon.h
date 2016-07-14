@@ -105,9 +105,9 @@ struct ap_intf_gpslock_t {
  * AP clock source
  */
 enum EAPClockSource {
-    NONE     = -1,                            // "NONE"
-    INTERNAL = DN_API_AP_CLK_SOURCE_INTERNAL, // "INTERNAL"
-    NETWORK  = DN_API_AP_CLK_SOURCE_NETWORK,  // "NETWORK"
-    PPS      = DN_API_AP_CLK_SOURCE_PPS,      // "PPS"
+    INTERNAL, // "INTERNAL"
+    NETWORK,  // "NETWORK"
+    PPS    ,  // "PPS"
+    MNGRSET,  // "MNGRSET"
 };
 ENUM2STR(EAPClockSource);

@@ -143,7 +143,7 @@ public:
 	  bReconnectSerial = true;
 	  bGpsdConn = false;
 
-      apClkSource = NONE;
+     apClkSource = MNGRSET;
 
    }
 protected:
@@ -379,6 +379,7 @@ try
    // Create and initialize Watchdog Notification object
    std::unique_ptr<IWdClntWrapper> pWdClnt(IWdClntWrapper::createWdClntWrapper(
       inputArgs.getVal().wdName, APC_LOG_NAME, epGetter, ctx.get()));
+   coupler.setWDClient(pWdClnt->getWdClient());
 
    // Create RPC workers
    std::unique_ptr<CAPCRpcWorker> apcwrk(new CAPCRpcWorker(ctx.get(), epRpc, inputArgs.clientId, 
