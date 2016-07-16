@@ -49,7 +49,7 @@ static const uint32_t E_STOP            = 0x200;
 
 static const uint8_t  CLOCKSOURCR_NONE   = 0xFF;
 
-static const uint32_t MIN_VERSION[4] = {0, 0, 0, 0};
+static const uint32_t MIN_VERSION[4] = {1, 4, 0, 81};
 
 CAPCoupler::CAPCoupler(boost::asio::io_service& io_service) :
      m_leapCheckTimer(io_service),

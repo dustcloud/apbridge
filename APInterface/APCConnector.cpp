@@ -194,7 +194,7 @@ apc_error_t CAPCConnector::start()
 apc_error_t CAPCConnector::connect(ap_intf_id_t intfId, uint32_t mySeq, uint32_t yourSeq, 
                                    const apc_msg_net_gpslock_s& gpsState, uint32_t netId, uint32_t flags)
 {
-   apc_msg_connect_s_v1 conMsg;
+   apc_msg_connect_s conMsg;
    m_intfId = intfId;
    m_lastReceivedSeqNum = m_lastReportedSeqNum = yourSeq;
    // Set connection parameters
@@ -533,9 +533,6 @@ apc_error_t CAPCConnector::messageReceived(ap_intf_id_t apcId, apc_msg_type_t ty
       m_isConnected = true;
       if (m_pApcNotif) {
          apc_msg_connect_s * pConnect = (apc_msg_connect_s *)pPayload;
-         string              swVersion = "N/A";
-         if (size >= sizeof(apc_msg_connect_s_v1))
-            swVersion = ((apc_msg_connect_s_v1 *)pPayload)->version;
          m_peerIntfName = pConnect->identity;
          DUSTLOG_INFO(m_log, "CAPCConnector #" << m_intfId  << " Peer name: '" << m_peerIntfName << "'");
 
@@ -548,7 +545,7 @@ apc_error_t CAPCConnector::messageReceived(ap_intf_id_t apcId, apc_msg_type_t ty
          param.mySeq    = mySeq;
          param.yourSeq  = yourSeq; 
          strncpy(param.name,    pConnect->identity, sizeof(param.name));    param.name[sizeof(param.name) - 1] = 0;
-         strncpy(param.version, swVersion.c_str(),  sizeof(param.version)); param.name[sizeof(param.version) - 1] = 0;
+         strncpy(param.version, pConnect->version,  sizeof(param.version)); param.name[sizeof(param.version) - 1] = 0;
 
          m_pApcNotif->apcConnected(p, param);
       }
