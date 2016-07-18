@@ -113,7 +113,7 @@ public:
    apcclient_state_t getClientState() const { return m_mngrClient->getState(); }
    bool isAPConnected() const { return m_apConnected;}
    
-   void setWDClient(IWdClient *  pWDdClient) { m_pWDdClient = m_pWDdClient; }
+   void setWDClient(IWdClient *  pWDdClient) { m_pWDdClient = pWDdClient; }
 
    // IAPCClientNotif
 

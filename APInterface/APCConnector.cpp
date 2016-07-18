@@ -545,7 +545,7 @@ apc_error_t CAPCConnector::messageReceived(ap_intf_id_t apcId, apc_msg_type_t ty
          param.mySeq    = mySeq;
          param.yourSeq  = yourSeq; 
          strncpy(param.name,    pConnect->identity, sizeof(param.name));    param.name[sizeof(param.name) - 1] = 0;
-         strncpy(param.version, pConnect->version,  sizeof(param.version)); param.name[sizeof(param.version) - 1] = 0;
+         strncpy(param.version, pConnect->version,  sizeof(param.version)); param.version[sizeof(param.version) - 1] = 0;
 
          m_pApcNotif->apcConnected(p, param);
       }

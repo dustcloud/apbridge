@@ -38,7 +38,7 @@ protected:
    class apcnotif_t: public boost::intrusive::list_base_hook<>
    {
    public:
-      apcnotif_t() : m_type(APC_NA), m_apc(nullptr) {;}
+      apcnotif_t() : m_type(APC_NA), m_apc(nullptr), m_payloadSize(0) {;}
       apc_notiftype_t      m_type;
       CAPCConnector::ptr   m_apc;
       std::vector<uint8_t> m_payload;
