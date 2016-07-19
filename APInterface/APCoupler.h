@@ -235,4 +235,6 @@ private:
    sys_time_t           m_blackoutStart;      ///< Start time of blackout interval
 
    IWdClient         *  m_pWDdClient;        // Watch Dog client. Use for stop of APC
+
+   bool                 m_isIntClkSrc;       // Flag set by manager
 };

@@ -808,10 +808,8 @@ bool CAPMTransport::setAPConnectionState_p(bool isConnected)
 void  CAPMTransport::startJoin_p()
 {
    DUSTLOG_INFO(APM_IO_LOGGER, "Start Join process");
-   uint8_t paramsId[] = {DN_API_PARAM_MACADDR, DN_API_PARAM_AP_CLKSRC};
-   for (uint8_t p : paramsId) {
-      insertMsg(DN_API_LOC_CMD_GETPARAM, &p, sizeof(p));      
-   }
+   uint8_t p = DN_API_PARAM_MACADDR;
+   insertMsg(DN_API_LOC_CMD_GETPARAM, &p, sizeof(p));      
 
    // Set Network ID
    dn_api_set_netid_t param;

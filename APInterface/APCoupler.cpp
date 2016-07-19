@@ -67,7 +67,8 @@ CAPCoupler::CAPCoupler(boost::asio::io_service& io_service) :
      m_events(0),
      m_smThread(nullptr),
      m_blackoutStart(SYSTIME_EMPTY),
-     m_pWDdClient(nullptr)
+     m_pWDdClient(nullptr),
+     m_isIntClkSrc(false)
 { 
    m_gps_info.satellites_used = m_gps_info.satellites_visible = 0;
 }
@@ -143,14 +144,15 @@ void CAPCoupler::connected(std::string server, uint32_t flags)
 {
    DUSTLOG_INFO(m_logname, "Connected to "<< server << " flags: " << flags);
    // Set Clock Source property to AP
-   bool isIntClk = (flags & APC_FL_INTSYNCH_AP) == APC_FL_INTSYNCH_AP;
-   setClockSource_p(isIntClk);
+   m_isIntClkSrc = (flags & APC_FL_INTSYNCH_AP) == APC_FL_INTSYNCH_AP;
+   setClockSource_p(m_isIntClkSrc);
    sendEvent_p(E_MNGR_CONNECT);
 }
 
 void CAPCoupler::disconnected(apc_stop_reason_t reason)
 {
    DUSTLOG_INFO(m_logname, "Disconnect: "<< toString(reason));
+   m_isIntClkSrc = false;
    sendEvent_p(E_MNGR_DISCONNECT);
 }
 
@@ -301,7 +303,9 @@ void CAPCoupler::handleReadyForTime(const dn_api_loc_notif_ready_for_time_t& rea
       return;  // Doesn't set time during blackout period
    }
 
-   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_INTERNAL)
+   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_INTERNAL || 
+       (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_AUTO && 
+        ((m_apClkSource == MNGRSET && m_isIntClkSrc) || m_apClkSource == INTERNAL)))
    {
       DUSTLOG_DEBUG(m_logname, "AP RX Ready for time: internal sync");
 	   sendSetSystime(0);
@@ -363,10 +367,16 @@ void CAPCoupler::handleParamMoteInfo(const dn_api_rsp_get_moteinfo_t& getMoteInf
 {
    //TODO: 17 bytes should be further divided in to new fields other than version.
    memcpy(&m_apInfo.swVersion, &getMoteInfo.swVer, 5);
+   
+}
 
+void CAPCoupler::handleParamAppInfo(const dn_api_rsp_get_appinfo_t& getAppInfo)
+{
+   memcpy(&m_apInfo.appVersion, &getAppInfo.appVer, 5);
    // Check version
    uint32_t ver[4] = {
-      getMoteInfo.swVer.major, getMoteInfo.swVer.minor, getMoteInfo.swVer.patch, getMoteInfo.swVer.build
+      (uint32_t) getAppInfo.appVer.major, (uint32_t) getAppInfo.appVer.minor, 
+      (uint32_t) getAppInfo.appVer.patch, (uint32_t) ntohs(getAppInfo.appVer.build)
    };
    for(int i = 0; i < 4; i++) {
       if (ver[i] > MIN_VERSION[i])
@@ -379,11 +389,6 @@ void CAPCoupler::handleParamMoteInfo(const dn_api_rsp_get_moteinfo_t& getMoteInf
          break;
       }
    }
-}
-
-void CAPCoupler::handleParamAppInfo(const dn_api_rsp_get_appinfo_t& getAppInfo)
-{
-   memcpy(&m_apInfo.appVersion, &getAppInfo.appVer, 5);
 }
 
 void CAPCoupler::handleParamApStatus(const dn_api_rsp_get_apstatus_t& getAppStatus)
