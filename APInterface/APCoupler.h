@@ -158,6 +158,7 @@ public:
    virtual void handleSatellitesVisibleChanged(uint16_t);
    virtual void handleSatellitesUsedChanged(uint16_t);
    
+   void    setClockSrource(EAPClockSource newClkSrc);
 private:
    class exeption_stop : public std::exception {
    public:

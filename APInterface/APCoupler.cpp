@@ -505,6 +505,14 @@ void CAPCoupler::handleAPResume()
       m_mngrClient->sendResume();
 }
 
+void CAPCoupler::setClockSrource(EAPClockSource newClkSrc)
+{
+   if (newClkSrc == m_apClkSource)
+      return;
+   m_apClkSource = newClkSrc;
+   m_transport->hwResetAP();
+}
+
 apc_error_t CAPCoupler::sendCmd(uint8_t cmdId, const uint8_t* data, size_t length,
                                 ResponseCallback resCallback, ErrorResponseCallback errRespCallback)
 {
