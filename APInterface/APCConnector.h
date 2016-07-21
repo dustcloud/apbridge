@@ -324,7 +324,7 @@ class IAPCConnectorNotif
 {
 public:
    struct param_connected_s {
-      uint32_t       ver; 
+      uint8_t        ver; 
       uint32_t       netId;
       ap_intf_id_t   apcId; 
       char           name[APC_CONNECTOR_NAME_LENGTH+1];
@@ -364,7 +364,7 @@ public:
     *
     * \param   name  Name of other side of connection
     */
-   virtual void apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param) = 0;
+   virtual void apcConnected(CAPCConnector::ptr pAPC, const param_connected_s& param) = 0;
 
    /**
     * AP disconnect notification.
@@ -374,7 +374,7 @@ public:
     * \param   reason         Reason for disconnection       
     * \param   maxAllocOutPkt Number of used output buffers
     */
-   virtual void apcDisconnected(CAPCConnector::ptr pAPC, param_disconnected_s& param) = 0;
+   virtual void apcDisconnected(CAPCConnector::ptr pAPC, const param_disconnected_s& param) = 0;
 
    /**
     * Data receive notification
@@ -384,7 +384,7 @@ public:
     * \param   pPayload The payload.
     * \param   size     The size.
     */
-   virtual void messageReceived(param_received_s& param, const uint8_t * pPayload, uint16_t size) = 0;
+   virtual void messageReceived(const param_received_s& param, const uint8_t * pPayload, uint16_t size) = 0;
 
 };
 

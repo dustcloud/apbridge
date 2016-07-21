@@ -138,7 +138,7 @@ void CAPCCtrlNotifThread::apcStarted(CAPCConnector::ptr pAPC)
    insertNotif_p(pNotif);
 }
 
-void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param)
+void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, const param_connected_s& param)
 {
    boost::unique_lock<boost::mutex> lock(m_lock);
    if (!m_isWork)
@@ -151,7 +151,7 @@ void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, param_connected_
    insertNotif_p(pNotif);
 }
 
-void CAPCCtrlNotifThread::apcDisconnected(CAPCConnector::ptr pAPC, param_disconnected_s& param)
+void CAPCCtrlNotifThread::apcDisconnected(CAPCConnector::ptr pAPC, const param_disconnected_s& param)
 {
    boost::unique_lock<boost::mutex> lock(m_lock);
    if (!m_isWork)
@@ -163,7 +163,7 @@ void CAPCCtrlNotifThread::apcDisconnected(CAPCConnector::ptr pAPC, param_disconn
    insertNotif_p(pNotif);
 }
 
-void CAPCCtrlNotifThread::messageReceived(param_received_s& param, const uint8_t * pPayload, uint16_t size)
+void CAPCCtrlNotifThread::messageReceived(const param_received_s& param, const uint8_t * pPayload, uint16_t size)
 {
    boost::unique_lock<boost::mutex> lock(m_lock);
    if (!m_isWork)

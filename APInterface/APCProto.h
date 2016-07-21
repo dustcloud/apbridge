@@ -97,7 +97,7 @@ struct apc_msg_connect_s
    uint32_t sesId;         ///< Unique session id assigned by the Manager. . 0 - used client for start new session
    apc_msg_net_gpslock_s gpsstate; ///< GPS lock status 
    uint32_t netId;         ///< Network ID Send by manager to APC
-   char     version[SIZE_STR_VER];   ///< APC/ Manger software version
+   char     version[SIZE_STR_VER];   ///< APC / Manager software version
 };
 
 /**

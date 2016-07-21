@@ -87,9 +87,9 @@ private:
 
    //[ IAPCConnectorNotif interface ------------------------------------------------------------------
    virtual void apcStarted(CAPCConnector::ptr pAPC);
-   virtual void apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param);
-   virtual void apcDisconnected(CAPCConnector::ptr pAPC, param_disconnected_s& param);
-   virtual void messageReceived(param_received_s& param, const uint8_t * pPayload, uint16_t size);
+   virtual void apcConnected(CAPCConnector::ptr pAPC, const param_connected_s& param);
+   virtual void apcDisconnected(CAPCConnector::ptr pAPC, const param_disconnected_s& param);
+   virtual void messageReceived(const param_received_s& param, const uint8_t * pPayload, uint16_t size);
 
 };
 

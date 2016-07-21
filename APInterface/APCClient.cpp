@@ -207,7 +207,7 @@ apc_error_t CAPCClient::sendGpsLock(const ap_intf_gpslock_t& p)
 
 // Interface IAPCConnectorNotif  -------------------------------------------
 // Message received
-void CAPCClient::messageReceived(param_received_s& param, const uint8_t * pPayload, uint16_t size)
+void CAPCClient::messageReceived(const param_received_s& param, const uint8_t * pPayload, uint16_t size)
 {
    m_cache.confirmedSeqNum(param.yourSeq);
    if ((param.flags & APC_HDR_FLAGS_NOTRACK) == 0) 
@@ -256,7 +256,7 @@ void CAPCClient::apcStarted(CAPCConnector::ptr pAPC)
 }
 
 // Process Connect notification from CAPCConnector
-void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param)
+void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, const param_connected_s& param)
 {
    bool        isNewConnection = false;
    apc_error_t res = APC_OK;
@@ -324,7 +324,7 @@ void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, param_connected_s& param)
 }
 
 // Process Disconnection notification from CAPCConnector
-void CAPCClient::apcDisconnected(CAPCConnector::ptr pAPC, param_disconnected_s& param)
+void CAPCClient::apcDisconnected(CAPCConnector::ptr pAPC, const param_disconnected_s& param)
 {
    bool isImmediately  = false;
    bool isSendNotif    = false;

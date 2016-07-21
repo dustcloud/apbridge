@@ -142,9 +142,10 @@ void CAPCoupler::stop()
 
 void CAPCoupler::connected(std::string server, uint32_t flags)
 {
-   DUSTLOG_INFO(m_logname, "Connected to "<< server << " flags: " << flags);
    // Set Clock Source property to AP
    m_isIntClkSrc = (flags & APC_FL_INTSYNCH_AP) == APC_FL_INTSYNCH_AP;
+   DUSTLOG_INFO(m_logname, "Connected to "<< server << " flags: 0x" << hex 
+               << flags << " isIntClkSrc: " << (m_isIntClkSrc ? "TRUE" : "FALSE"));
    setClockSource_p(m_isIntClkSrc);
    sendEvent_p(E_MNGR_CONNECT);
 }
