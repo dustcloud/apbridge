@@ -28,7 +28,8 @@ class CAPCRpcWorker : public RpcWorker
 {
 public:
    CAPCRpcWorker(zmq::context_t* ctx, std::string svrAddr, 
-                 std::string identity, CAPCoupler* apCoupler, 
+                 std::string identity, std::string confName, 
+                 CAPCoupler* apCoupler, 
                  IAPCClient  * pApcClient,
                  CSerialPort * pSerPort);
     
@@ -86,6 +87,16 @@ private:
     * Process AP_API
     */
    zmessage* handleAP_API(std::string requestStr);
+
+   /**
+    * Process Set_AP_ClkSrc
+    */
+   zmessage* handleSetAPClkSrc(std::string requestStr);
+
+   /**
+    * Process Get_AP_ClkSrc
+    */
+   zmessage* handleGetAPClkSrc(std::string requestStr);
    
    CAPCoupler  * m_apcApi;
    IAPCClient  * m_apcClient;

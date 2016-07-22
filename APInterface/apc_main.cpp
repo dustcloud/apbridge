@@ -57,6 +57,8 @@ const char WELCOME_MSG[] = "APC";
 const char* APC_LOG_NAME = "apc.main";
 static const uint32_t WD_APC_KA_TIMEOUT_SEC = 2;
 EAPResetSignal APResetSignal = AP_RESET_SIGNAL_TX;
+EAPClockSource APM_DEFAULT_CLOCK_SOURCE = MNGRSET; // clock source
+
 
 boost::asio::io_service g_svc;
 
@@ -143,7 +145,7 @@ public:
 	  bReconnectSerial = true;
 	  bGpsdConn = false;
 
-     apClkSource = MNGRSET;
+      apClkSource = APM_DEFAULT_CLOCK_SOURCE;
 
    }
 protected:
@@ -180,7 +182,7 @@ protected:
       ("reset-signal", boost::program_options::value<string>(&sResetSignal), "Signal used to reset AP")
       ("reconnect-serial", boost::program_options::value<bool>(&bReconnectSerial), "Reconnect serial port on errors")
       ("max-packet-age", boost::program_options::value<uint32_t>(&maxPacketAge), "Maximim age allowed for packets wait in queue before triggering PAUSE to manager, in milliseconds")
-      ("ap-clock-source", boost::program_options::value<string>(&sApClkSource), "AP Clock Source, choice of INTERNAL, NETWORK or PPS")
+      ("ap-clock-source", boost::program_options::value<string>(&sApClkSource), "AP Clock Source, choice of GPS or AUTO")
       ;
    }
    virtual void process(boost::program_options::variables_map &vm) { 
@@ -193,9 +195,9 @@ protected:
       }
 
       if (!sApClkSource.empty()) {
-          if (!toEnum(sApClkSource.c_str(), apClkSource)) {
+          if (!clkSrcStringToEnum(sApClkSource, apClkSource)) {
              ostringstream errStr;
-             errStr << "Invalid ap-clock-source value " << sApClkSource << ", must be INTERNAL, NETWORK or PPS.";
+             errStr << "Invalid ap-clock-source value " << sApClkSource << ", should be GPS or AUTO.";
              throw boost::program_options::error(errStr.str());
           }
       }
@@ -383,6 +385,7 @@ try
 
    // Create RPC workers
    std::unique_ptr<CAPCRpcWorker> apcwrk(new CAPCRpcWorker(ctx.get(), epRpc, inputArgs.clientId, 
+                                                           inputArgs.getVal().confName,
                                                            &coupler, &client, &port));
    
    // Create RPC sever

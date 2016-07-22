@@ -6,20 +6,24 @@
 
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 #include "rpc/public/RpcCommon.h"
 #include "rpc/public/ConvertDelayStat.h"
 #include "rpc/apc.pb.h"
-
 
 //#include "public/IAPCClient.h" // TODO: really need pointer to APCoupler
 #include "APCoupler.h"
 
 #include "common/Version.h"
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+
 using namespace zmqUtils;
 
 std::string Id;
+std::string ApcConfName;
 
 const char APC_LOGGER[] = "apc";
 const unsigned int  AP_RESPONSE_TIMEOUT = 20000; //milliseconds wait time. TODO: From config or CLI ?
@@ -27,6 +31,7 @@ const unsigned int  AP_RESPONSE_TIMEOUT = 20000; //milliseconds wait time. TODO:
 CAPCRpcWorker::CAPCRpcWorker(zmq::context_t* ctx,
                              std::string svrAddr, 
                              std::string identity,
+                             std::string confName,
                              CAPCoupler* apCoupler,
                              IAPCClient  * pApcClient,
                              CSerialPort * pSerPort)
@@ -40,6 +45,8 @@ CAPCRpcWorker::CAPCRpcWorker(zmq::context_t* ctx,
 {
 	DUSTLOG_INFO(m_logname, "CAPCRpcWorker ID: " << identity);
 	Id = identity;
+    ApcConfName = confName;
+
    ;
 }
 
@@ -70,6 +77,12 @@ zmessage* CAPCRpcWorker::processCmdMsg(uint8_t cmdId, const std::string& params)
          break;
       case apc::AP_API:
          responseMsg = handleAP_API(params);
+         break;
+      case apc::SET_AP_CLKSRC:
+         responseMsg = handleSetAPClkSrc(params);
+         break;
+      case apc::GET_AP_CLKSRC:
+         responseMsg = handleGetAPClkSrc(params);
          break;
       default:
          DUSTLOG_ERROR(m_logname.c_str(), 
@@ -206,6 +219,7 @@ zmessage* CAPCRpcWorker::handleResetAP(std::string requestStr)
    m_apcApi->resetAP();   
    return createResponse(apc::AP_RESET, RPC_OK, "");
 }
+
 void CAPCRpcWorker::handleAP_APIResponse(uint8_t cmdId, const uint8_t* resBuffer,size_t size)
 {
    DUSTLOG_DEBUG(m_logname.c_str(), "handleAP_APIResponse Payload Length : " << size << "Response :" << resBuffer );
@@ -261,6 +275,47 @@ zmessage* CAPCRpcWorker::handleAP_API(std::string requestStr)
 
    return createResponse(apc::AP_API, RPC_OK, "");
 }
+
+zmessage* CAPCRpcWorker::handleSetAPClkSrc(std::string requestStr)
+{
+    apc::AP_setClkSrcReq request;
+    parseFromString_p(request, requestStr);
+
+    EAPClockSource apClkSource;
+    std::string oldClkSrcStr;
+    std::string clkSrcStr = request.clksrc();
+    boost::property_tree::ptree pt;
+
+    DUSTLOG_DEBUG(m_logname, "CAPCRpcWorker ConfName: " << ApcConfName);
+    boost::property_tree::ini_parser::read_ini(ApcConfName, pt);
+    oldClkSrcStr = pt.get<std::string>("ap-clock-source", "AUTO");
+    DUSTLOG_DEBUG(m_logname, "CAPCRpcWorker old ap-clock-source: " << oldClkSrcStr);
+    DUSTLOG_DEBUG(m_logname, "CAPCRpcWorker new ap-clock-source: " << clkSrcStr);
+
+    if (!clkSrcStringToEnum(clkSrcStr, apClkSource)) {
+        return createResponse(apc::SET_AP_CLKSRC, RPC_INVALID_PARAMETERS, "Should be GPS or AUTO");
+    }
+    
+    if (oldClkSrcStr != clkSrcStr) {
+        pt.put("ap-clock-source", clkSrcStr.c_str());
+        boost::property_tree::ini_parser::write_ini(ApcConfName, pt);
+        m_apcApi->setClockSrource(apClkSource);
+    }
+
+    return createResponse(apc::SET_AP_CLKSRC, RPC_OK, "");
+}
+
+
+zmessage* CAPCRpcWorker::handleGetAPClkSrc(std::string requestStr)
+{
+   apc::AP_getClkSrcResp response;
+   EAPClockSource apClkSource = m_apcApi->getApClkSrc();
+   std::string clkSrc = clkSrcEnumToString(apClkSource);
+   response.set_clksrc(clkSrc);
+
+   return createResponse(apc::GET_AP_CLKSRC, response);
+}
+
 const std::string CAPCRpcWorker::cmdCodeToStr(uint8_t cmdcode)
 {
    return apc::APCCommandType_Name((apc::APCCommandType)cmdcode);

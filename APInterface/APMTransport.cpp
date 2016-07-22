@@ -599,7 +599,7 @@ apc_error_t CAPMTransport::sendCommand(uint8_t cmdId, const uint8_t* data, size_
    }
    {
       ostringstream prefix;
-      prefix << "OUT " << "cmd:" << hex << (int)cmdId << " data";
+      prefix << "OUT " << "cmd:" << setfill('0') << setw(2) << hex << (int)cmdId << " data";
       DUSTLOG_TRACEDATA(APM_RAWIO_LOGGER, prefix.str(), output.data(), output.size());
    }
    // send command

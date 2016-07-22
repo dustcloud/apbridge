@@ -347,8 +347,11 @@ class CommandLineHandler(cmd.Cmd):
           if cmd == "loglevel" and numCmdArgs == 2:
               self.setLogLevel(cmdArgs[0].lower(), cmdArgs[1].lower())
           elif cmd == "ap" and numCmdArgs == 2:
-             cmdArgs = [x.lower() for x in cmdArgs]
-             self.apcClient.rpcAP_API_setParameter(cmdArgs)
+             if cmdArgs[0].lower() == 'clksrc':
+                 self.apcClient.rpcSetAPClkSrc(cmdArgs)
+             else:
+                 cmdArgs = [x.lower() for x in cmdArgs]
+                 self.apcClient.rpcAP_API_setParameter(cmdArgs)
           else:
              printError("INVALID_CL_ARGS")
        except Exception as e:
@@ -387,6 +390,9 @@ class CommandLineHandler(cmd.Cmd):
 
        try:
           if cmd == "ap" and numCmdArgs == 1:
+             if cmdArgs[0].lower() == 'clksrc':
+                 self.apcClient.rpcGetAPClkSrc(cmdArgs)
+             else:
                 self.apcClient.rpcAP_API_getParameter(cmdArgs[0].lower())
           elif cmd == "apc" and numCmdArgs == 1:
                 self.apcClient.rpcAPC_getParameter(cmdArgs[0].lower())

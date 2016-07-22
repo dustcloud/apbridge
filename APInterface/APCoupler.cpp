@@ -263,7 +263,9 @@ void CAPCoupler::handleAPReboot()
    
 void CAPCoupler::handleError(uint8_t cmdId, uint8_t rc)
 {
-   DUSTLOG_ERROR(m_logname, "Command " << (int)cmdId << " returns error: " << (int)rc);
+   DUSTLOG_ERROR(m_logname, "Command " 
+                 << setfill('0') << setw(2) << hex << (int)cmdId 
+                 << " returns error: " << (int)rc);
    //TODO add processing of errors
 }
 
@@ -388,7 +390,7 @@ void CAPCoupler::handleParamAppInfo(const dn_api_rsp_get_appinfo_t& getAppInfo)
          if (m_pWDdClient)
             m_pWDdClient->disconnect(IChangeNodeState::STOP_FATAL_ERROR);
          break;
-      }
+}
    }
 }
 
@@ -783,6 +785,35 @@ void CAPCoupler::setClockSource_p(bool isIntClk)
    }
    DUSTLOG_INFO(m_logname, "Set AP Clock Source to: " << (int)m_apInfo.clksource);
 }
+
+
+bool clkSrcStringToEnum(std::string str, EAPClockSource& clkSrc)
+{
+    // make it case insensitive
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+    if (str == "GPS") {
+      clkSrc = PPS;
+    } else if (str == "AUTO") {
+      clkSrc = MNGRSET;
+    } else {
+       return false;
+    }
+
+    return true;
+}
+
+
+std::string clkSrcEnumToString(EAPClockSource clkSrc)
+{
+    if (clkSrc == PPS) {
+       return "GPS";
+    } else if (clkSrc == MNGRSET) {
+       return "AUTO";
+    } else {
+       return "UNKNOWN";
+    }
+}
+
 
 uint32_t CAPCoupler::runStateMachine_p()
 {

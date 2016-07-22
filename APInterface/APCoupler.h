@@ -106,6 +106,8 @@ public:
 
    gps_status_t getGpsStatus() { return m_cur_gps_status; }
 
+   EAPClockSource getApClkSrc() { return m_apClkSource;  }
+
    apc_error_t open(init_param_t& init_params);
    void start();
    void stop();
@@ -159,6 +161,7 @@ public:
    virtual void handleSatellitesUsedChanged(uint16_t);
    
    void    setClockSrource(EAPClockSource newClkSrc);
+
 private:
    class exeption_stop : public std::exception {
    public:
@@ -239,3 +242,6 @@ private:
 
    bool                 m_isIntClkSrc;       // Flag set by manager
 };
+
+bool        clkSrcStringToEnum(std::string str, EAPClockSource& clkSrc);
+std::string clkSrcEnumToString(EAPClockSource clkSrc);

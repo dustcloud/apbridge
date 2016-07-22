@@ -12,6 +12,8 @@ enum APCCommandType {
    CLEAR_APC_STATS = 4;
    AP_RESET        = 5;
    AP_API		   = 6;
+   SET_AP_CLKSRC   = 7;
+   GET_AP_CLKSRC   = 8;
 }
 
 
@@ -119,3 +121,24 @@ message AP_APIResp {
    required uint32    cmdId	 = 1;
    optional bytes   response = 2;
 }
+
+
+/**
+ * SET AP CLKSRC request/response structure
+ *
+ * \param clkSrc Clock Source
+ */
+message AP_setClkSrcReq { 
+   required string  clkSrc	 = 1;
+}
+
+
+/**
+ * GET AP get CLKSRC response structure
+ *
+ * \param clkSrc Clock Source
+ */
+message AP_getClkSrcResp { 
+   required string  clkSrc	 = 1;
+}
+

@@ -388,3 +388,30 @@ class ApcClient(BaseRpcClient):
                             "",
                             service=APC_RPC_SERVICE)
 
+    def rpcSetAPClkSrc(self, args):
+       ''' Set AP ClkSrc
+       '''
+       req  = apc_pb2.AP_setClkSrcReq()
+       req.clkSrc = args[1]
+
+       try:  
+          self.send_msg(apc_pb2.SET_AP_CLKSRC, 
+                            req,
+                            "",
+                            service=APC_RPC_SERVICE)
+       except Exception as e:
+          raise e
+       return None
+
+    def rpcGetAPClkSrc(self, args):
+       ''' Get AP ClkSrc
+       '''
+       resp = self.send_msg(
+                            apc_pb2.GET_AP_CLKSRC, 
+                            "",
+                            apc_pb2.AP_getClkSrcResp,
+                            service=APC_RPC_SERVICE)
+       dict = pb2dict(resp)
+       print dict['clkSrc']
+       return None
+
