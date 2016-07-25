@@ -375,7 +375,7 @@ void CAPCoupler::handleParamMoteInfo(const dn_api_rsp_get_moteinfo_t& getMoteInf
 
 void CAPCoupler::handleParamAppInfo(const dn_api_rsp_get_appinfo_t& getAppInfo)
 {
-   memcpy(&m_apInfo.appVersion, &getAppInfo.appVer, 5);
+   memcpy(&m_apInfo.appVersion, &getAppInfo.appVer, sizeof(m_apInfo.appVersion));
    // Check version
    uint32_t ver[4] = {
       (uint32_t) getAppInfo.appVer.major, (uint32_t) getAppInfo.appVer.minor, 
@@ -386,7 +386,10 @@ void CAPCoupler::handleParamAppInfo(const dn_api_rsp_get_appinfo_t& getAppInfo)
          break;
       if (ver[i] < MIN_VERSION[i]) {
          DUSTLOG_FATAL(m_logname, "Incompatible AP ver: " << 
-                       ver[0] << "." << ver[1] << "." << ver[2] << "." << ver[3]);
+                       ver[0] << "." << ver[1] << "." << ver[2] << "." << ver[3] 
+                       << " (expect version >= " 
+                       << MIN_VERSION[0] << "." << MIN_VERSION[1] << "." 
+                       << MIN_VERSION[2] << "." << MIN_VERSION[3] << ")" );
          if (m_pWDdClient)
             m_pWDdClient->disconnect(IChangeNodeState::STOP_FATAL_ERROR);
          break;
