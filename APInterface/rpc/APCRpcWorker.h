@@ -97,6 +97,11 @@ private:
     * Process Get_AP_ClkSrc
     */
    zmessage* handleGetAPClkSrc(std::string requestStr);
+
+   /**
+    * Convert from Enum to APM definition
+    */
+   const uint8_t ClkSourceToInt(EAPClockSource apClkSrc);
    
    CAPCoupler  * m_apcApi;
    IAPCClient  * m_apcClient;

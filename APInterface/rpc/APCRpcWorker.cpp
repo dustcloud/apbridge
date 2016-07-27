@@ -125,8 +125,10 @@ zmessage* CAPCRpcWorker::handleAPInfo(std::string requestStr)
 
    if (m_apcApi->isAPConnected()) {
       SAPMInfo apInfo = m_apcApi->getAPMInfo();
+      EAPClockSource apClkSource = m_apcApi->getApClkSrc();
+      
       response.set_macaddr(apInfo.mac, sizeof(apInfo.mac));
-      response.set_clksource(apInfo.clksource);
+      response.set_clksource(ClkSourceToInt(apClkSource));
       response.set_networkid(apInfo.networkId);
    
       // version is major (int8u) + minor (int8u) + patch (int8u) + build (int16U)
@@ -321,3 +323,11 @@ const std::string CAPCRpcWorker::cmdCodeToStr(uint8_t cmdcode)
    return apc::APCCommandType_Name((apc::APCCommandType)cmdcode);
 }
 
+const uint8_t CAPCRpcWorker::ClkSourceToInt(EAPClockSource apClkSrc)
+{
+    if (apClkSrc == PPS) {
+            return DN_API_AP_CLK_SOURCE_PPS;
+    } else {
+            return DN_API_AP_CLK_SOURCE_AUTO;
+    }
+}
