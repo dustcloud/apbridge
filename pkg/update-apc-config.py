@@ -192,7 +192,8 @@ def add_apc(args):
     
     apcConfTemp = os.path.join(APC_CONF_DIR, APC_CONF_TEMPLATE)
     apcConfFile = os.path.join(APC_CONF_DIR, apcFileName)
-    create_file_from_template(apcConfTemp, apcConfFile)
+    ret = create_file_from_template(apcConfTemp, apcConfFile)
+    os.chmod(apcConfFile, 0666)
     if ret:
         print " APC conf file for {0} created".format(args.name)
         # apply supervisor configuration
