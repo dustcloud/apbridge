@@ -342,12 +342,12 @@ def stunnel(args):
             print " failed to install stunnel conf file"
         else:
             print " installed stunnel conf file"
-        ret = check_call(['sudo', 'service', 'stunnel4', 'stop'])
+        ret = check_call(['sudo', 'systemctl', 'stop', 'stunnel4.service'])
         if ret:
             print " failed to stop stunnel"
         else:
             print " stopped stunnel"
-        ret = check_call(['sudo', 'stunnel4', stunnelTargetFile])
+        ret = check_call(['sudo', 'systemctl', 'start', 'stunnel4.service'])
         if ret:
             print " failed to start stunnel"
         else:
