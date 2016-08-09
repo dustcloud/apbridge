@@ -290,7 +290,7 @@ class ApcClient(BaseRpcClient):
           val = struct.unpack('!B', payload)[0]
           val = dn_to_str.dnToStrClkSrc(val)
        elif cmd == APParameters['apstatus'][0]:
-          val = struct.unpack('!B', payload)[0]
+          val = struct.unpack('!BB', payload)[0]
           val = dn_to_str.dnToStrMoteSt(val)
        elif cmd == APParameters['txpwr'][0]:
           val = struct.unpack('!B', payload)[0]
