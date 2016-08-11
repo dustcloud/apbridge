@@ -830,7 +830,7 @@ uint32_t CAPCoupler::runStateMachine_p()
       boost::this_thread::sleep(boost::posix_time::milliseconds(RETRY_INTERVAL));
    }
    // Wait connection (or error)
-   events = waitEvents_p(E_MNGR_CONNECT | E_MNGR_DISCONNECT | E_APM_LOST | E_AP_RESET);
+   events = waitEvents_p(E_MNGR_CONNECT | E_MNGR_DISCONNECT | E_APM_BOOT | E_APM_LOST | E_AP_RESET);
 
    if ((events ^ E_MNGR_CONNECT) == 0) {
       // Only one Connect event received
