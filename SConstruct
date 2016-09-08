@@ -34,8 +34,9 @@ command_line_vars.AddVariables(
     ('verbose', 'Verbose build output', True),
     ('build_name', 'Debug string to append to build versions', ''),
     # where to find executables
-    ('user_path', "Allow scons to use user's PATH", 0),
+    ('user_path', "Allow scons to use user's PATH", 1),
     # specific details -- defaults for each build platform are defined below
+    ('toolchain_dir', "Path to compiler toolchain", ''),
     ('tools_prefix', "Path to headers and libraries for runtime components", ''),
     ('boost_prefix', "Path for the Boost headers and libraries", ''),
     ('boost_lib_suffix', "Suffix for the Boost libraries", ''),
@@ -160,8 +161,8 @@ def getLinuxEnv(baseEnv):
         # the --start-group and --end-group directives let gcc resolve library ordering
         LINKCOM='$LINK -o $TARGET $SOURCES $LINKFLAGS $_LIBDIRFLAGS -Wl,--start-group $_LIBFLAGS -Wl,--end-group',
         # rpath finds shared libraries at runtime without LD_LIBRARY_PATH
-        LINKFLAGS=['-Wl,-rpath,/opt/dust-apbridge/lib',
-                   '-Wl,-rpath,$TOOLS_DIR/lib'],
+        LINKFLAGS=['-Wl,-rpath,/opt/dust-apc/lib',
+                   '-Wl,-rpath,$TOOLS_DIR/lib'],  # needed to find sub-libs at build time
     )
 
     # Compile actions for protobuf messages
@@ -198,10 +199,9 @@ def get_x86_64_platform(env):
 def get_raspi2_platform(env):
     'Set architecture-specific flags for raspberry pi 2'
 
-    # TODO: compiler location
-    env['TOOLCHAIN_DIR'] = "/tools/armpi-linux/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian"
-    env['CXX']  = '$TOOLCHAIN_DIR/bin/arm-linux-gnueabihf-g++'
-    env['LINK'] = '$TOOLCHAIN_DIR/bin/arm-linux-gnueabihf-g++'
+    # compiler location
+    env['CXX']  = '$toolchain_dir/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-g++'
+    env['LINK'] = '$toolchain_dir/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-g++'
 
     if int(env['debug']):
         env.Append(CCFLAGS = ['-gdwarf-3'])
@@ -212,17 +212,24 @@ def get_raspi2_platform(env):
     env['GPS_LIBS'] = ['gps']
 
     env['PLATFORM'] = 'armpi-linux'
-    return env 
+    return env
 
 
 if platform.system() in 'Linux':
     # fill in defaults if not set
+    dev_dir = os.path.join(os.environ['HOME'], 'dev')
     if not baseEnv['tools_prefix']:
-        baseEnv['tools_prefix'] = "/tools/voyager-1.0/" + baseEnv['target'] + "-linux"
+        # the tools_prefix is where to find the locally installed headers and libs
+        # for the runtime dependencies
+        # by default, this is in $HOME/dev/opt/dust-apc
+        baseEnv['tools_prefix'] = os.path.join(dev_dir, 'opt', 'dust-apc')
     if not baseEnv['boost_prefix']:
-        baseEnv['boost_prefix'] = "$tools_prefix/boost_$BOOST_VERSION"
-    baseEnv['BOOST_VERSION'] = '1_60_0'
-
+        # the boost_prefix is where to find the base of the boost sources
+        # by default, this is in $HOME/dev/boost_1_60_0
+        baseEnv['boost_prefix'] = os.path.join(dev_dir, "boost_1_60_0")
+    if not baseEnv['toolchain_dir']:
+        baseEnv['toolchain_dir'] = os.path.join(dev_dir, 'arm-bcm2708')
+    
     env = getLinuxEnv(baseEnv)
 
     if env['target'] == 'armpi':
