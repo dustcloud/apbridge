@@ -32,14 +32,14 @@ Commands = {
 
 APParameters = {
    #  parameterId and control flag
-   'macaddr'           : (0x01, ('get', 'set')),
-   'joinkey'           : (0x02, ('set')),
-   'networkid'         : (0x03, ('get')),
-   'txpower'           : (0x04, ('get', 'set')),
+   'macaddr'           : (0x01, ('get')),
+   'jkey'              : (0x02, ('set')),
+   'netid'             : (0x03, ('get')),
+   'txpwr'             : (0x04, ('get', 'set')),
    'apinfo'            : (0x0C, ('get')),
    'time'              : (0x0F, ('get')),
    'appInfo'           : (0x1E, ('get')),
-   'apclksource'       : (0x26, ('get', 'set')),
+   'clksrc'            : (0x26, ('get', 'set')),
    'apstatus'          : (0x28, ('get')),
    }
 
@@ -72,7 +72,7 @@ StatsDict = {
       'apMaxTimeInQueue' : [14,'Time In Queue Max (us)', '0'],
       'apAvgTimeInQueue' : [15,'Time In Queue Avg (us)', '0'],
       'numOutBuffers'    : [16,'Number of output buffers', '0'],
-      'apCurrPktRate'    : [17, 'Current Rate (pps)',   '0.0'],
+      'apCurrPktRate'    : [17, 'RX Current Rate(pps)',   '0.0'],
       'ap30secPktRate'   : [18, '30 sec average (pps)', '0.0'],
       'ap5minPktRate'    : [19, '5  min average (pps)', '0.0'],
       'apAvgPktRate'     : [20, 'total  average (pps)', '0.0'],
@@ -145,10 +145,10 @@ def gen_payload(param_id, param_data):
    ''' A generic function generate request
    '''
    payload = struct.pack('B', param_id)
-   if (param_id == APParameters['apclksource'][0] or 
-       param_id == APParameters['txpower'][0]):
+   if (param_id == APParameters['clksrc'][0] or 
+       param_id == APParameters['txpwr'][0]):
       payload += struct.pack('B', int(param_data))
-   elif param_id == APParameters['networkid'][0]:
+   elif param_id == APParameters['netid'][0]:
       payload += struct.pack('!H', int(param_data))
    elif param_id == APParameters['macaddr'][0]:
       # in format of 01-23-45-67-89-AB-CD-EF or 0123456789ABCDEF
@@ -163,8 +163,8 @@ def gen_payload(param_id, param_data):
          print "Invalid mac address, expect 01-23-45-67-89-AB-CD-EF or 0123456789ABCDEF"
          return ""
       payload += macAddr
-   elif param_id == APParameters['joinkey'][0]:
-      # joinkey is 16 bytes, input format is 0123456789ABCDEF...
+   elif param_id == APParameters['jkey'][0]:
+      # jkey is 16 bytes, input format is 0123456789ABCDEF...
       payload += param_data.decode('hex')
    return payload
 
@@ -282,17 +282,17 @@ class ApcClient(BaseRpcClient):
           val = presentAPInfo (payload)
        elif cmd == APParameters['time'][0]:
           val = presentTime(payload)
-       elif cmd == APParameters['networkid'][0]:
+       elif cmd == APParameters['netid'][0]:
           val = struct.unpack('!H', payload)[0]
-       elif cmd == APParameters['txpower'][0]:
+       elif cmd == APParameters['txpwr'][0]:
           val = struct.unpack('!B', payload)[0]
-       elif cmd == APParameters['apclksource'][0]:
+       elif cmd == APParameters['clksrc'][0]:
           val = struct.unpack('!B', payload)[0]
           val = dn_to_str.dnToStrClkSrc(val)
        elif cmd == APParameters['apstatus'][0]:
-          val = struct.unpack('!B', payload)[0]
+          val = struct.unpack('!BB', payload)[0]
           val = dn_to_str.dnToStrMoteSt(val)
-       elif cmd == APParameters['txpower'][0]:
+       elif cmd == APParameters['txpwr'][0]:
           val = struct.unpack('!B', payload)[0]
        else:
           val = 'Unknown ' + str(cmd)
@@ -376,10 +376,7 @@ class ApcClient(BaseRpcClient):
 
              # print delay stats
              delayStats = rpcRespToDict(apcStats_resp)
-             if 'AP/APC Statistics' in names:
-                print "TX delays:  ", statDelaysToString(delayStats['toAP'])
-                print "RX delays:  ", statDelaysToString(delayStats['fromAP'])
-             elif 'Manager' in names:
+             if 'Manager' in names:
                 print "TX delays:  ", statDelaysToString(delayStats['toMngr'])
              print            
     
@@ -390,4 +387,31 @@ class ApcClient(BaseRpcClient):
                             "",
                             "",
                             service=APC_RPC_SERVICE)
+
+    def rpcSetAPClkSrc(self, args):
+       ''' Set AP ClkSrc
+       '''
+       req  = apc_pb2.AP_setClkSrcReq()
+       req.clkSrc = args[1]
+
+       try:  
+          self.send_msg(apc_pb2.SET_AP_CLKSRC, 
+                            req,
+                            "",
+                            service=APC_RPC_SERVICE)
+       except Exception as e:
+          raise e
+       return None
+
+    def rpcGetAPClkSrc(self, args):
+       ''' Get AP ClkSrc
+       '''
+       resp = self.send_msg(
+                            apc_pb2.GET_AP_CLKSRC, 
+                            "",
+                            apc_pb2.AP_getClkSrcResp,
+                            service=APC_RPC_SERVICE)
+       dict = pb2dict(resp)
+       print dict['clkSrc']
+       return None
 

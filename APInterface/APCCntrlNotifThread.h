@@ -21,12 +21,9 @@ public:
 
    // IAPCCtrl interface
    virtual void apcStarted(CAPCConnector::ptr pAPC);
-   virtual void apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t apcId, 
-                           const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq);
-   virtual void apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopflags_t flags,
-                              apc_stop_reason_t reason, uint32_t maxAllocOutPkt);
-   virtual void messageReceived(ap_intf_id_t apcId, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
-                                apc_msg_type_t type, const uint8_t * pPayload, uint16_t size);
+   virtual void apcConnected(CAPCConnector::ptr pAPC, const param_connected_s& param);
+   virtual void apcDisconnected(CAPCConnector::ptr pAPC, const param_disconnected_s& param);
+   virtual void messageReceived(const param_received_s& param, const uint8_t * pPayload, uint16_t size);
 
 protected:
    enum apc_notiftype_t {  // "#IGNORE"
@@ -41,34 +38,16 @@ protected:
    class apcnotif_t: public boost::intrusive::list_base_hook<>
    {
    public:
-      apcnotif_t() : m_type(APC_NA), m_apc(nullptr) {;}
-      apc_notiftype_t        m_type;
+      apcnotif_t() : m_type(APC_NA), m_apc(nullptr), m_payloadSize(0) {;}
+      apc_notiftype_t      m_type;
       CAPCConnector::ptr   m_apc;
       std::vector<uint8_t> m_payload;
+      uint32_t             m_payloadSize;
       union {
-         struct {
-            uint32_t       ver; 
-            uint32_t       netId;
-            ap_intf_id_t   apcId; 
-            char           name[APC_CONNECTOR_NAME_LENGTH+1];
-            uint8_t        flags;
-            uint32_t       mySeq;
-            uint32_t       yourSeq;         
-         }                 m_connect;
-         struct {
-            CAPCConnector::stopflags_t flags;
-            apc_stop_reason_t          reason;
-            uint32_t                   maxAllocOutPkt;
-         }                 m_disconnect;
-         struct {
-            ap_intf_id_t   apcId;
-            uint8_t        flags;
-            uint32_t       mySeq;
-            uint32_t       yourSeq;
-            apc_msg_type_t type;
-            uint32_t       size;
-         }                 m_msg;
-      }                    m_param;
+         IAPCConnectorNotif::param_connected_s    m_connect;
+         IAPCConnectorNotif::param_disconnected_s m_disconnect;
+         IAPCConnectorNotif::param_received_s     m_msg;
+      }                                           m_param;
 
    };
 

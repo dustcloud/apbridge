@@ -133,6 +133,18 @@ class Listener(object):
         except KeyError:
             pass
 
+    def isTraceFilterEnabled(self, traceFilter):
+        '''Check if the notification is in the trace filter list.
+        
+        Keyword arguments:
+        traceFilter - Trace filter name
+        '''
+        traceId = self.lookupNotifId(traceFilter)
+        if traceId in self.trace_filter:
+            return True
+        else:
+            return False
+            
     def saveTraceMessage(self, traceMsg):
         '''Save trace message into a specific file
 

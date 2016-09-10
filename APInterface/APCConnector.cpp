@@ -99,6 +99,7 @@ CAPCConnector::ptr CAPCConnector::createConnection(const CAPCConnector::init_par
 
 CAPCConnector::CAPCConnector(const init_param_t& param) :
    m_apcName(param.apcConnect),
+   m_swVersion(param.swVersion),
    m_pApcNotif(param.pApcNotif),  
    m_pSerializer(nullptr),
    m_intfId(APINTFID_EMPTY), 
@@ -191,19 +192,21 @@ apc_error_t CAPCConnector::start()
 
 // Send Connect message.
 apc_error_t CAPCConnector::connect(ap_intf_id_t intfId, uint32_t mySeq, uint32_t yourSeq, 
-                                   const apc_msg_net_gpslock_s& gpsState, uint32_t netId)
+                                   const apc_msg_net_gpslock_s& gpsState, uint32_t netId, uint32_t flags)
 {
    apc_msg_connect_s conMsg;
    m_intfId = intfId;
    m_lastReceivedSeqNum = m_lastReportedSeqNum = yourSeq;
    // Set connection parameters
    conMsg.ver   = APC_PROTO_VER;
-   conMsg.flags = 0;
+   conMsg.flags = flags;
    conMsg.sesId = intfId;
    strncpy(conMsg.identity, m_apcName.c_str(), sizeof(conMsg.identity));
    conMsg.identity[sizeof(conMsg.identity) - 1] = 0;
    conMsg.gpsstate = gpsState;
    conMsg.netId = netId;
+   strncpy(conMsg.version, m_swVersion.c_str(), sizeof(conMsg.version));
+   conMsg.version[sizeof(conMsg.version) - 1] = 0;
 
    return sendData(APC_CONNECT, 0, mySeq, (const uint8_t *)&conMsg, sizeof(conMsg), NULL, 0);
 }
@@ -217,7 +220,8 @@ void CAPCConnector::disconnect()
 }
 
 // Closes all processes (receiving, KA) and socket
-void CAPCConnector::stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t stopFlags, bool isFinishWriting)
+void CAPCConnector::stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t stopFlags, 
+                         bool isFinishWriting, bool isSendNotif)
 {
    boost::unique_lock<boost::mutex> lock(m_lock); //lock after non working 
    ptr p = shared_from_this();
@@ -264,12 +268,16 @@ void CAPCConnector::stop(apc_stop_reason_t reason, apc_error_t err, stopflags_t 
    m_isConnected = false;
 
    // Send 'apcDisconnect' notification
-   if (m_pApcNotif) {
+   if (isSendNotif && m_pApcNotif) {
       if (m_forceDisconnect) {
          stopFlags = (stopflags_t)((uint32_t)stopFlags & ~STOP_FL_OFFLINE);
          stopFlags = (stopflags_t)((uint32_t)stopFlags | STOP_FL_DISCONNECT);
       }
-      m_pApcNotif->apcDisconnected(p, stopFlags, reason, APC_NUM_OUT_BUFS - m_minNumFreeOutBuf);
+      IAPCConnectorNotif::param_disconnected_s param;
+      param.flags          = stopFlags;
+      param.reason         = reason;
+      param.maxAllocOutPkt = APC_NUM_OUT_BUFS - m_minNumFreeOutBuf;
+      m_pApcNotif->apcDisconnected(p, param);
    }
 }
 
@@ -527,8 +535,19 @@ apc_error_t CAPCConnector::messageReceived(ap_intf_id_t apcId, apc_msg_type_t ty
          apc_msg_connect_s * pConnect = (apc_msg_connect_s *)pPayload;
          m_peerIntfName = pConnect->identity;
          DUSTLOG_INFO(m_log, "CAPCConnector #" << m_intfId  << " Peer name: '" << m_peerIntfName << "'");
-         m_pApcNotif->apcConnected(p, pConnect->ver, pConnect->netId,
-            pConnect->sesId,  pConnect->identity, flags, mySeq, yourSeq);
+
+         IAPCConnectorNotif::param_connected_s param;
+         param.ver      = pConnect->ver; 
+         param.netId    = pConnect->netId;
+         param.apcId    = pConnect->sesId;
+         param.cmdFlags = pConnect->flags;
+         param.hdrFlags = flags;
+         param.mySeq    = mySeq;
+         param.yourSeq  = yourSeq; 
+         strncpy(param.name,    pConnect->identity, sizeof(param.name));    param.name[sizeof(param.name) - 1] = 0;
+         strncpy(param.version, pConnect->version,  sizeof(param.version)); param.version[sizeof(param.version) - 1] = 0;
+
+         m_pApcNotif->apcConnected(p, param);
       }
       //[ ---- Start Keep alive timers after receiving CONNECT back from Manager
       if (m_kaTxTimer != nullptr) {
@@ -541,7 +560,14 @@ apc_error_t CAPCConnector::messageReceived(ap_intf_id_t apcId, apc_msg_type_t ty
       res = APC_STOP_CONNECTOR;
    } else if (m_pApcNotif) {
       // Generate messageReceive notification
-      m_pApcNotif->messageReceived(apcId, flags, mySeq, yourSeq, type, pPayload, size);
+      IAPCConnectorNotif::param_received_s param;
+      param.apcId     = apcId;
+      param.flags     = flags;
+      param.mySeq     = mySeq;
+      param.yourSeq   = yourSeq;
+      param.type      = type;
+
+      m_pApcNotif->messageReceived(param, pPayload, size);
    }
 
    if (mySeq > m_lastReceivedSeqNum)

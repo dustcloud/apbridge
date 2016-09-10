@@ -111,6 +111,7 @@ void CGPS::readGPSThreadFun()
          else
          {
              std::stringstream ss;
+
              /* When the number of satellites in use is greater than our configurable parameter,
              we record the "stable start time". When the number of satellites in use has been
              stable for long enough, then we declare that the GPS is sync'ed.

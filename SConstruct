@@ -13,6 +13,17 @@ from SCons.Errors import UserError
 sys.path += [os.path.join(os.getcwd(), 'scripts'),]
 
 # ----------------------------------------------------------------------
+# Defaults
+
+# The publish_dir is a directory where release packages are copied.
+# This is used internally for Dust development.
+DEFAULT_PUBLISH_DIR = ''  # defaults to current directory
+
+# The repository_dir is a Debian repository directory where release packages
+# are copied. This is used internally for Dust development.
+DEFAULT_REPOSITORY_DIR = ''
+
+# ----------------------------------------------------------------------
 # Base setup, command line options
 
 command_line_vars = Variables()
@@ -23,15 +34,16 @@ command_line_vars.AddVariables(
     ('verbose', 'Verbose build output', True),
     ('build_name', 'Debug string to append to build versions', ''),
     # where to find executables
-    ('user_path', "Allow scons to use user's PATH", 0),
+    ('user_path', "Allow scons to use user's PATH", 1),
     # specific details -- defaults for each build platform are defined below
+    ('toolchain_dir', "Path to compiler toolchain", ''),
     ('tools_prefix', "Path to headers and libraries for runtime components", ''),
     ('boost_prefix', "Path for the Boost headers and libraries", ''),
     ('boost_lib_suffix', "Suffix for the Boost libraries", ''),
-    ('python',
-     '''Path to python. Defaults to \Python27 on Windows, /usr/bin/python on Linux.''', 'python'),
-    ('publish_dir', 'Directory for publishing released artifacts', ''),
-    ('repository_dir', "Directory to store the .deb file", '/mnt/sdev/repo_scripts'),
+    ('python', '''Path to python. Defaults to python from scons PATH.''', 'python'),
+    ('protoc', '''Path to protobuf compiler, protoc. Defaults to protoc from scons PATH.''', 'protoc'),
+    ('publish_dir', 'Directory for publishing released artifacts', DEFAULT_PUBLISH_DIR),
+    ('repository_dir', "Directory to store the .deb file", DEFAULT_REPOSITORY_DIR),
     EnumVariable('target', 'Choose target platform', 'i686',
                  allowed_values=('i686', 'x86_64', 'armpi')),
 )
@@ -149,12 +161,12 @@ def getLinuxEnv(baseEnv):
         # the --start-group and --end-group directives let gcc resolve library ordering
         LINKCOM='$LINK -o $TARGET $SOURCES $LINKFLAGS $_LIBDIRFLAGS -Wl,--start-group $_LIBFLAGS -Wl,--end-group',
         # rpath finds shared libraries at runtime without LD_LIBRARY_PATH
-        LINKFLAGS=['-Wl,-rpath,/opt/dust-apbridge/lib',
-                   '-Wl,-rpath,$TOOLS_DIR/lib'],
+        LINKFLAGS=['-Wl,-rpath,/opt/dust-apc/lib',
+                   '-Wl,-rpath,$TOOLS_DIR/lib'],  # needed to find sub-libs at build time
     )
 
-    # Compile actions for various intermediate languages
-    env['PROTOC'] = os.path.join('/tools', 'bin', 'protoc') # TODO: use tools_root
+    # Compile actions for protobuf messages
+    env['PROTOC'] = env['protoc']
     env['PROTOBUFCOM_DST'] = '$BUILD_DIR'
     env['PROTOBUFCOM'] = 'LD_LIBRARY_PATH=$TOOLS_DIR $PROTOC -I. -I$BUILD_DIR --proto_path=$BUILD_DIR --cpp_out=$PROTOBUFCOM_DST $SOURCE' # -I$SOURCE.dir --cpp_out=$TARGET.dir
 
@@ -187,10 +199,9 @@ def get_x86_64_platform(env):
 def get_raspi2_platform(env):
     'Set architecture-specific flags for raspberry pi 2'
 
-    # TODO: compiler location
-    env['TOOLCHAIN_DIR'] = "/tools/armpi-linux/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian"
-    env['CXX']  = '$TOOLCHAIN_DIR/bin/arm-linux-gnueabihf-g++'
-    env['LINK'] = '$TOOLCHAIN_DIR/bin/arm-linux-gnueabihf-g++'
+    # compiler location
+    env['CXX']  = '$toolchain_dir/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-g++'
+    env['LINK'] = '$toolchain_dir/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-g++'
 
     if int(env['debug']):
         env.Append(CCFLAGS = ['-gdwarf-3'])
@@ -201,17 +212,24 @@ def get_raspi2_platform(env):
     env['GPS_LIBS'] = ['gps']
 
     env['PLATFORM'] = 'armpi-linux'
-    return env 
+    return env
 
 
 if platform.system() in 'Linux':
     # fill in defaults if not set
+    dev_dir = os.path.join(os.environ['HOME'], 'dev')
     if not baseEnv['tools_prefix']:
-        baseEnv['tools_prefix'] = "/tools/voyager-1.0/" + baseEnv['target'] + "-linux"
+        # the tools_prefix is where to find the locally installed headers and libs
+        # for the runtime dependencies
+        # by default, this is in $HOME/dev/opt/dust-apc
+        baseEnv['tools_prefix'] = os.path.join(dev_dir, 'opt', 'dust-apc')
     if not baseEnv['boost_prefix']:
-        baseEnv['boost_prefix'] = "$tools_prefix/boost_$BOOST_VERSION"
-    baseEnv['BOOST_VERSION'] = '1_60_0'
-
+        # the boost_prefix is where to find the base of the boost sources
+        # by default, this is in $HOME/dev/boost_1_60_0
+        baseEnv['boost_prefix'] = os.path.join(dev_dir, "boost_1_60_0")
+    if not baseEnv['toolchain_dir']:
+        baseEnv['toolchain_dir'] = os.path.join(dev_dir, 'arm-bcm2708')
+    
     env = getLinuxEnv(baseEnv)
 
     if env['target'] == 'armpi':
@@ -263,6 +281,10 @@ env.Append(CPPPATH=['#',
                     os.path.join('#', env['BUILD_DIR'], 'rpc'),
                     os.path.join('#', env['BUILD_DIR'], 'public'),
                     ])
+
+# Configure the destination directory for published artifacts
+if not env['publish_dir']:
+    env['publish_dir'] = DEFAULT_PUBLISH_DIR
 
 # Targets for release distribution
 env['DIST_TARGETS'] = {}

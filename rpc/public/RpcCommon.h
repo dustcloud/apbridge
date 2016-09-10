@@ -110,6 +110,7 @@ enum RpcServices {
    APC_RPC_SERVICE             = 10, // "apc"
    WATCHDOG_RPC_SERVICE        = 11, // "watchdog"
    WD_USER_SERVICE             = 12, // "wd_user"
+   SIM_RPC_SERVER              = 13, // "sim_srv"
 };
 ENUM2STR(RpcServices);
 

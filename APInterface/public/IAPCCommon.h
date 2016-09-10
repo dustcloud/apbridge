@@ -1,6 +1,7 @@
 #pragma once
 #include "common.h"
 #include "StatDelays.h"
+#include "6lowpan/public/dn_api_net.h"
 
 /**
  * \file IAPCCommon.h
@@ -14,6 +15,7 @@ struct ap_intf_info_t
    std::string  name;       ///< Name of interface
    std::string  ipAddress;   ///< IP address of APC
    uint16_t     port;       ///< TCP port of APC
+   std::string  swVersion;
 };
 
 struct ap_intf_stat_t
@@ -98,3 +100,14 @@ ENUM2STR(ap_int_gpslockstat_t)
 struct ap_intf_gpslock_t {
    ap_int_gpslockstat_t           gpsstate;   ///< state of gps lock. 0=no lock, 1=lock
 };
+
+/**
+ * AP clock source
+ */
+enum EAPClockSource {
+    INTERNAL, // "INTERNAL"
+    NETWORK,  // "NETWORK"
+    PPS    ,  // "PPS"
+    MNGRSET,  // "MNGRSET"
+};
+ENUM2STR(EAPClockSource);

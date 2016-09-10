@@ -42,10 +42,13 @@ enum apc_stop_reason_t
    APC_STOP_WRITE,         ///< Write error
    APC_STOP_CLOSE,         ///< Close Connector process
    APC_STOP_DELAYED,       ///< Close after delay
-   APC_STOP_RECONNECTION,  ///< Reconnection error
+   APC_STOP_CONNECT_NOT_FOUND, ///< Can not find requested session
+   APC_STOP_CONNECT_NEW_PORT,  ///< APC reconnected for new port (old connection is closed)
+   APC_STOP_CONNECT_SAME_PORT, ///< APC reconnect to same port (current connection is closed)
    APC_STOP_PKTPARSE,      ///< Error in packet parsing
    APC_STOP_VER,           ///< Protocol version
    APC_STOP_MAXAPC,        ///< Max number of APC
+   APC_STOP_RECONNECTION,  ///< APC client reconnection error
 };
 ENUM2STR(apc_stop_reason_t);
 

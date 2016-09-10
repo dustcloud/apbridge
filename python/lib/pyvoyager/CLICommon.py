@@ -32,7 +32,7 @@ PROCESSLIST = ['configdb', 'authmanager', 'manager']
 
 NOTIF_CATEGORY_DICT = {
     'DATA':   ["dataPacketReceived", "ipPacketReceived"],
-    'EVENTS': ["alarmOpened", "alarmClosed", "bbStateChanged", "cmdFinished", "invalidMIC", "joinFailed", "moteStateChanged", "pathStateChanged", "pathAlert", "serviceChanged", "packetSent", "pingResponse", "optPhase"],
+    'EVENTS': ["alarmOpened", "alarmClosed", "cmdFinished", "invalidMIC", "joinFailed", "moteStateChanged", "pathStateChanged", "pathAlert", "serviceChanged", "packetSent", "pingResponse", "optPhase", "managerStopping", "managerStarted", "minNumParentsChanged"],
     'HR':     ["deviceHealthReport", "discoveryHealthReport", "neighborHealthReport", "rawMoteNotification"],
     'CONFIG': ["configChanged", "configDeleted", "configLoaded", "configRestored"],
 }
@@ -74,7 +74,10 @@ def printError(keyWord="Error", obv=""):
         errmsg = "Error"
 
     if obv:
-        errmsg = errmsg + ": {0} ".format(obv)
+        if obv == 'RPC Error 35: ':
+            errmsg = errmsg + ": unauthorized command. The current user does not have the privileges to perform this operation. "
+        else:
+            errmsg = errmsg + ": {0} ".format(obv)
 
     if keyWord == 'INVALID_CL_ARGS':
         errmsg = errmsg + "\nTry help <command> [<subcommand>] for more information."

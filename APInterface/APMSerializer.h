@@ -65,6 +65,7 @@ private:
    std::vector<uint8_t>  m_inputBuffer;
    size_t                m_bytesReceived;
    size_t                m_bytesExpected;
+   uint16_t              m_bootCounter;
 
 private:
   void handleGetParam(const uint8_t* data, size_t length);

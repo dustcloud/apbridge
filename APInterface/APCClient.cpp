@@ -1,5 +1,6 @@
 #include "APCClient.h"
 using namespace std;
+#include "common/Version.h"
 
 CAPCClient::CAPCClient(uint32_t  cacheSize) : m_cache( cacheSize)
 {
@@ -206,17 +207,16 @@ apc_error_t CAPCClient::sendGpsLock(const ap_intf_gpslock_t& p)
 
 // Interface IAPCConnectorNotif  -------------------------------------------
 // Message received
-void CAPCClient::messageReceived(ap_intf_id_t apcId, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
-                                        apc_msg_type_t type, const uint8_t * pPayload, uint16_t size)
+void CAPCClient::messageReceived(const param_received_s& param, const uint8_t * pPayload, uint16_t size)
 {
-   m_cache.confirmedSeqNum(yourSeq);
-   if ((flags & APC_HDR_FLAGS_NOTRACK) == 0) 
-      m_lastRxSeqNum = mySeq;
+   m_cache.confirmedSeqNum(param.yourSeq);
+   if ((param.flags & APC_HDR_FLAGS_NOTRACK) == 0) 
+      m_lastRxSeqNum = param.mySeq;
 
    if (m_pInput == NULL)
       return;
 
-   switch(type)  {
+   switch(param.type)  {
    case APC_NET_TX:
       {
          apc_msg_net_tx_s * pCmd = (apc_msg_net_tx_s *)pPayload;
@@ -256,15 +256,21 @@ void CAPCClient::apcStarted(CAPCConnector::ptr pAPC)
 }
 
 // Process Connect notification from CAPCConnector
-void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t intfId, 
-                           const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq)
+void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, const param_connected_s& param)
 {
    bool        isNewConnection = false;
    apc_error_t res = APC_OK;
    {
       boost::unique_lock<boost::mutex> lock(m_lock);
 
-      if (intfId == APINTFID_EMPTY || (m_intfId != APINTFID_EMPTY && intfId != m_intfId)) {
+      if (param.ver != APC_PROTO_VER) {
+         // Request for disconnection. Close current session 
+         pAPC->stop(APC_STOP_VER, APC_ERR_PROTOCOL, CAPCConnector::STOP_FL_DISCONNECT);
+         DUSTLOG_ERROR(m_logName, "CAPCClient #" << m_intfId << " Wrong version of protocol " << param.ver);
+         return;
+      }
+
+      if (param.apcId == APINTFID_EMPTY || (m_intfId != APINTFID_EMPTY && param.apcId != m_intfId)) {
          // Request for disconnection. Close current session 
          pAPC->stop(APC_STOP_RECONNECTION, APC_ERR_PROTOCOL, CAPCConnector::STOP_FL_DISCONNECT);
          DUSTLOG_ERROR(m_logName, "CAPCClient #" << m_intfId << " Manager did not accept connection with old interface id");
@@ -277,18 +283,18 @@ void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t ne
       stopTimer_p(m_reconnectTimer);
       m_disconnectTime = TIME_EMPTY;
       // Initialize interface ID
-      m_intfId = intfId;
-      m_netId = netId;
+      m_intfId = param.apcId;
+      m_netId = param.netId;
 
       // Save (if needed) server seq. number
-      if ((flags & APC_HDR_FLAGS_NOTRACK) == 0) 
-         m_lastRxSeqNum = mySeq;
+      if ((param.hdrFlags & APC_HDR_FLAGS_NOTRACK) == 0) 
+         m_lastRxSeqNum = param.mySeq;
 
       // For restoring connection
       if (!isNewConnection) {   
          // Send data from cache
          CAPCCache::apc_cache_pkt_s  pkt;
-         m_cache.confirmedSeqNum(yourSeq, true); 
+         m_cache.confirmedSeqNum(param.yourSeq, true); 
          m_cache.prepForGet();
          while(res == APC_OK && m_cache.getNextPacket(&pkt) != APC_ERR_NOTFOUND) {
             res = m_pConnector->sendData(pkt.m_type, 0, pkt.m_seqNumb, pkt.m_payload.data(), pkt.m_size, NULL, 0);
@@ -303,7 +309,7 @@ void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t ne
       DUSTLOG_INFO(m_logName, "CAPCClient #" << m_intfId << (isNewConnection ? " Connect" : " Online"));
       if (m_pInput) {
          if (isNewConnection)
-            m_pInput->connected(name);
+            m_pInput->connected(param.name, param.cmdFlags);
          else
             m_pInput->online();
       }
@@ -318,8 +324,7 @@ void CAPCClient::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t ne
 }
 
 // Process Disconnection notification from CAPCConnector
-void CAPCClient::apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopflags_t flags,
-                              apc_stop_reason_t reason, uint32_t maxAllocOutPkt)
+void CAPCClient::apcDisconnected(CAPCConnector::ptr pAPC, const param_disconnected_s& param)
 {
    bool isImmediately  = false;
    bool isSendNotif    = false;
@@ -331,7 +336,7 @@ void CAPCClient::apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopfla
       m_pConnector = nullptr;
 
       // Disconnect if ...
-      if (flags == CAPCConnector::STOP_FL_DISCONNECT || // Disconnect explicitly required 
+      if (param.flags == CAPCConnector::STOP_FL_DISCONNECT || // Disconnect explicitly required 
           m_intfId == APINTFID_EMPTY ||                 // Client never receive 'connect' from manager 
           m_disconnectTimeoutMsec == 0)                           // Reconnection is disable 
          isImmediately = true;
@@ -358,14 +363,14 @@ void CAPCClient::apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopfla
       m_sigDisconnect.notify_all();
    }      
    DUSTLOG_INFO(m_logName, "CAPCClient #" << m_intfId << (isImmediately ? " Disconnect" : " Offline")
-               << " Reason:" << toString(reason));
+               << " Reason:" << toString(param.reason));
 
    // Send disconnected/offline notification
    if (isSendNotif  && m_pInput) {
       if (isImmediately)
-         m_pInput->disconnected(reason);
+         m_pInput->disconnected(param.reason);
       else
-         m_pInput->offline(reason);   
+         m_pInput->offline(param.reason);   
    }
 }
 
@@ -472,7 +477,8 @@ CAPCConnector::ptr CAPCClient::ipConnect_p(string& errMsg)
 
    CAPCConnector::init_param_t connectorParam = {
       m_intfName, &m_IOService, &m_notifThread, m_kaTimeout, 
-      m_freeBufTimeout, (uint32_t)(m_cache.getCacheSize() * 0.75), m_logName 
+      m_freeBufTimeout, (uint32_t)(m_cache.getCacheSize() * 0.75), m_logName,
+      getVersionLabel(),
    };
 
    pAPC = CAPCConnector::createConnection(connectorParam);

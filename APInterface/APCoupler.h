@@ -27,6 +27,7 @@
 #include "NTPLeapSec.h"
 #include "public/IAPCClient.h"
 #include "public/IGPS.h"
+#include "watchdog/public/IWdClient.h"
 
 #include "6lowpan/public/dn_api_common.h"
 #include "6lowpan/public/dn_api_local.h"
@@ -55,7 +56,6 @@ struct gps_info_t {
    uint16_t satellites_used;    ///< number of satellites used
 };
 
-
 /**
  * AP Coupler
  *
@@ -78,6 +78,7 @@ public:
       uint32_t                    resetBootTimeoutMsec;
       uint32_t                    disconnectShortBootTimeoutMsec;
       uint32_t                    disconnectLongBootTimeoutMsec;
+      EAPClockSource              apClkSource;
    };
 
    CAPCoupler(boost::asio::io_service& io_service);
@@ -105,6 +106,8 @@ public:
 
    gps_status_t getGpsStatus() { return m_cur_gps_status; }
 
+   EAPClockSource getApClkSrc() { return m_apClkSource;  }
+
    apc_error_t open(init_param_t& init_params);
    void start();
    void stop();
@@ -112,9 +115,11 @@ public:
    apcclient_state_t getClientState() const { return m_mngrClient->getState(); }
    bool isAPConnected() const { return m_apConnected;}
    
+   void setWDClient(IWdClient *  pWDdClient) { m_pWDdClient = pWDdClient; }
+
    // IAPCClientNotif
 
-   virtual void connected(const std::string server);
+   virtual void connected(const std::string server, uint32_t flags);
    virtual void disconnected(apc_stop_reason_t  reason);
    virtual void dataRx(const ap_intf_sendhdr_t& hdr, const uint8_t * pPayload, uint32_t size);
    virtual void resume();
@@ -155,6 +160,8 @@ public:
    virtual void handleSatellitesVisibleChanged(uint16_t);
    virtual void handleSatellitesUsedChanged(uint16_t);
    
+   void    setClockSrource(EAPClockSource newClkSrc);
+
 private:
    class exeption_stop : public std::exception {
    public:
@@ -163,14 +170,18 @@ private:
 
    apc_error_t sendApSend(dn_api_loc_apsend_ctrl_t& hdr,
                           const uint8_t* data, size_t length);
-   apc_error_t sendSetApClkSource(uint8_t clkSource);
+   apc_error_t sendSetApClkSource(uint8_t clkSource, bool isResetAP);
    apc_error_t sendGetApNetId();
    apc_error_t sendGetApMoteInfo();
    apc_error_t sendGetApAppInfo();
    apc_error_t sendGetApStatus();
    apc_error_t sendGetNetId();
+   apc_error_t sendGetApClkSource();
    apc_error_t sendGetParam(uint8_t paramId);
-   apc_error_t sendSetParam(uint8_t paramId, const uint8_t* data, size_t length);
+   apc_error_t sendSetParam(uint8_t paramId, const uint8_t* data, size_t length,
+                            ResponseCallback resCallback  = NULL,
+                            ErrorResponseCallback errRespCallback = NULL);
+
    // Send current Manager time to AP
    void sendSetSystime(uint8_t seqNum);
 
@@ -186,6 +197,10 @@ private:
    // Check day for leap second changing
    void     leapCheckingTimer_p(const boost::system::error_code& error);
 
+   // Set Clock Source property to AP
+   void     setClockSource_p(bool isIntClkSrc);
+   void     handleSetClkSrcResponse_p(uint8_t cmdId, const uint8_t* response, size_t size);
+   void     handleSetClkSrcErrorResponse_p(uint8_t cmdId, uint8_t rc);
 
    // Get the interval (in seconds) between the given time and now, 
    // where the given time is expressed as a number of seconds since 
@@ -207,6 +222,7 @@ private:
    uint32_t       m_hwResetTimeoutMsec;         // Timeout after hardware reset
    uint32_t       m_disconnectTimeoutShortMsec; // Short timeout after disconnect command
    uint32_t       m_disconnectTimeoutLongMsec;  // Long timeout after disconnect command
+   EAPClockSource m_apClkSource;                // AP clock source
 
    std::string m_logname;
    IAPCClient::open_param_t   m_client_open_param;  ///< Client open parameters 
@@ -221,4 +237,11 @@ private:
    boost::thread*            m_smThread;           
 
    sys_time_t           m_blackoutStart;      ///< Start time of blackout interval
+
+   IWdClient         *  m_pWDdClient;        // Watch Dog client. Use for stop of APC
+
+   bool                 m_isIntClkSrc;       // Flag set by manager
 };
+
+bool        clkSrcStringToEnum(std::string str, EAPClockSource& clkSrc);
+std::string clkSrcEnumToString(EAPClockSource clkSrc);

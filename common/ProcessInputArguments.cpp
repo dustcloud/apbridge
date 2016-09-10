@@ -10,7 +10,7 @@
 using namespace std;
 namespace po = boost::program_options;
 
-CProcessInputArguments::CProcessInputArguments(const string& baseName) 
+CProcessInputArguments::CProcessInputArguments(const string& baseName, const char * hdr) 
 {
    m_defVal.apiProto    = DEFAULT_API_PROTO;
    m_defVal.apiIpcpath  = DEFAULT_API_IPCPATH_DIR;
@@ -20,6 +20,8 @@ CProcessInputArguments::CProcessInputArguments(const string& baseName)
    m_defVal.logName     = baseName + ".log";
    m_defVal.confName    = baseName + ".conf";
    m_defVal.logLevel    = DEFAULT_LOG_LEVEL;
+   if (hdr)
+      m_hdr = hdr;
 }
 
 bool CProcessInputArguments::parse(int argc, char* argv[], bool isWdClnt, bool isHost)
@@ -31,7 +33,9 @@ bool CProcessInputArguments::parse(int argc, char* argv[], bool isWdClnt, bool i
 
    m_val = m_defVal;
 
-   po::options_description desc("Arguments");
+   if (m_hdr.empty())
+      m_hdr = "Arguments";
+   po::options_description desc(m_hdr);
    desc.add_options()
    ("help", "Help message")
    ("api-proto",   po::value<string>(&proto),          "API protocol: IPC or TCP")

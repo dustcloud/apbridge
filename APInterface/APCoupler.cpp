@@ -21,15 +21,14 @@
 #include "6lowpan/public/dn_api_local.h"
 #include "6lowpan/public/dn_api_net.h" //For Clock Source Constants
 #include "common/IChangeNodeState.h"
+#include "APCProto.h"
 
-
+using namespace std;
 // Manage the protocol with the AP, integrate with AP Connector
 
-const char CLIENT_LOG[] = "apc.io";
-
-const int SEND_TIME_TIMEOUT = 60000; // milliseconds
-
-const int MAX_NUM_RESET = 3;
+static const char CLIENT_LOG[] = "apc.io";
+static const int SEND_TIME_TIMEOUT = 60000; // milliseconds
+static const int MAX_NUM_RESET = 3;
 
 static const int32_t UTC_MIDNIGHT = (23*60 + 59) * 60 + 59;       // 23:59:59
 static const int32_t AP_BLACKOUT          = UTC_MIDNIGHT - 30;    // Blackout time 30 sec before midnight 
@@ -48,6 +47,10 @@ static const uint32_t E_AP_DISCONNECT   = 0x80;
 static const uint32_t E_AP_END_BLACKOUT = 0x100;
 static const uint32_t E_STOP            = 0x200;
 
+static const uint8_t  CLOCKSOURCR_NONE   = 0xFF;
+
+static const uint32_t MIN_VERSION[4] = {1, 4, 0, 81};
+
 CAPCoupler::CAPCoupler(boost::asio::io_service& io_service) :
      m_leapCheckTimer(io_service),
      m_apInfo(),
@@ -58,11 +61,14 @@ CAPCoupler::CAPCoupler(boost::asio::io_service& io_service) :
      m_hwResetTimeoutMsec(0),
      m_disconnectTimeoutShortMsec(0),
      m_disconnectTimeoutLongMsec(0),
+     m_apClkSource(INTERNAL),
      m_logname(CLIENT_LOG),
      m_cur_gps_status(GPS_ST_NO_DEVICE),
      m_events(0),
      m_smThread(nullptr),
-     m_blackoutStart(SYSTIME_EMPTY)
+     m_blackoutStart(SYSTIME_EMPTY),
+     m_pWDdClient(nullptr),
+     m_isIntClkSrc(false)
 { 
    m_gps_info.satellites_used = m_gps_info.satellites_visible = 0;
 }
@@ -101,6 +107,7 @@ apc_error_t CAPCoupler::open(init_param_t& init_params)
    m_hwResetTimeoutMsec         = init_params.resetBootTimeoutMsec;
    m_disconnectTimeoutShortMsec = init_params.disconnectShortBootTimeoutMsec;
    m_disconnectTimeoutLongMsec  = init_params.disconnectLongBootTimeoutMsec;
+   m_apClkSource                = init_params.apClkSource;
    
    //m_smThread = new boost::thread(boost::bind(&CAPCoupler::smThreadFun_p, this));
    return APC_OK;
@@ -133,15 +140,20 @@ void CAPCoupler::stop()
 
 // IAPCClientNotif -- input from APC
 
-void CAPCoupler::connected(std::string server)
+void CAPCoupler::connected(std::string server, uint32_t flags)
 {
-   DUSTLOG_INFO(m_logname, "Connected to "<< server);
+   // Set Clock Source property to AP
+   m_isIntClkSrc = (flags & APC_FL_INTSYNCH_AP) == APC_FL_INTSYNCH_AP;
+   DUSTLOG_INFO(m_logname, "Connected to "<< server << " flags: 0x" << hex 
+               << flags << " isIntClkSrc: " << (m_isIntClkSrc ? "TRUE" : "FALSE"));
+   setClockSource_p(m_isIntClkSrc);
    sendEvent_p(E_MNGR_CONNECT);
 }
 
 void CAPCoupler::disconnected(apc_stop_reason_t reason)
 {
    DUSTLOG_INFO(m_logname, "Disconnect: "<< toString(reason));
+   m_isIntClkSrc = false;
    sendEvent_p(E_MNGR_DISCONNECT);
 }
 
@@ -227,8 +239,10 @@ void CAPCoupler::handleAPLost()
 
 void CAPCoupler::handleAPBoot()
 {
+   sendGetApClkSource();
    sendGetNetId();
    m_apConnected = true;
+   sendGetApMoteInfo();
    sendGetApAppInfo();
    sendGetApStatus();
    sendEvent_p(E_APM_BOOT);
@@ -238,15 +252,20 @@ void CAPCoupler::handleAPBoot()
 void CAPCoupler::handleAPReboot()
 {
    DUSTLOG_INFO(m_logname, "AP Reboot");
+   sendGetApClkSource();
    sendGetNetId();
    m_apConnected = true;
+   sendGetApMoteInfo();
+   sendGetApAppInfo();
    sendEvent_p(E_APM_REBOOT);
    m_apInfo.apState = DN_API_ST_IDLE;
 }
    
 void CAPCoupler::handleError(uint8_t cmdId, uint8_t rc)
 {
-   DUSTLOG_ERROR(m_logname, "Command " << (int)cmdId << " returns error: " << (int)rc);
+   DUSTLOG_ERROR(m_logname, "Command " 
+                 << setfill('0') << setw(2) << hex << (int)cmdId 
+                 << " returns error: " << (int)rc);
    //TODO add processing of errors
 }
 
@@ -287,7 +306,9 @@ void CAPCoupler::handleReadyForTime(const dn_api_loc_notif_ready_for_time_t& rea
       return;  // Doesn't set time during blackout period
    }
 
-   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_INTERNAL)
+   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_INTERNAL || 
+       (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_AUTO && 
+        ((m_apClkSource == MNGRSET && m_isIntClkSrc) || m_apClkSource == INTERNAL)))
    {
       DUSTLOG_DEBUG(m_logname, "AP RX Ready for time: internal sync");
 	   sendSetSystime(0);
@@ -349,13 +370,31 @@ void CAPCoupler::handleParamMoteInfo(const dn_api_rsp_get_moteinfo_t& getMoteInf
 {
    //TODO: 17 bytes should be further divided in to new fields other than version.
    memcpy(&m_apInfo.swVersion, &getMoteInfo.swVer, 5);
-   DUSTLOG_DEBUG(m_logname, "AP Response MoteInfo: ver="
-                 << show_hex(m_apInfo.swVersion, 5));
+   
 }
 
 void CAPCoupler::handleParamAppInfo(const dn_api_rsp_get_appinfo_t& getAppInfo)
 {
-   memcpy(&m_apInfo.appVersion, &getAppInfo.appVer, 5);
+   memcpy(&m_apInfo.appVersion, &getAppInfo.appVer, sizeof(m_apInfo.appVersion));
+   // Check version
+   uint32_t ver[4] = {
+      (uint32_t) getAppInfo.appVer.major, (uint32_t) getAppInfo.appVer.minor, 
+      (uint32_t) getAppInfo.appVer.patch, (uint32_t) ntohs(getAppInfo.appVer.build)
+   };
+   for(int i = 0; i < 4; i++) {
+      if (ver[i] > MIN_VERSION[i])
+         break;
+      if (ver[i] < MIN_VERSION[i]) {
+         DUSTLOG_FATAL(m_logname, "Incompatible AP ver: " << 
+                       ver[0] << "." << ver[1] << "." << ver[2] << "." << ver[3] 
+                       << " (expect version >= " 
+                       << MIN_VERSION[0] << "." << MIN_VERSION[1] << "." 
+                       << MIN_VERSION[2] << "." << MIN_VERSION[3] << ")" );
+         if (m_pWDdClient)
+            m_pWDdClient->disconnect(IChangeNodeState::STOP_FATAL_ERROR);
+         break;
+}
+   }
 }
 
 void CAPCoupler::handleParamApStatus(const dn_api_rsp_get_apstatus_t& getAppStatus)
@@ -365,10 +404,10 @@ void CAPCoupler::handleParamApStatus(const dn_api_rsp_get_apstatus_t& getAppStat
 
 void CAPCoupler::handleParamClkSrc(const dn_api_rsp_get_ap_clksrc_t& getClkSrc)
 {
-   memcpy(&m_apInfo.clksource, &getClkSrc.apClkSrc, sizeof(m_apInfo.clksource));
+   m_apInfo.clksource = getClkSrc.apClkSrc;
 
    //Clock Source is external then start reading from GPS daemon
-   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_PPS)
+   if (m_apInfo.clksource == DN_API_AP_CLK_SOURCE_PPS && m_apClkSource == PPS)
    {
       //connect to GPS only if the command line option gpsd-conn is set to true
       if (m_gps_start_param.m_gpsd_conn) {
@@ -472,6 +511,14 @@ void CAPCoupler::handleAPResume()
       m_mngrClient->sendResume();
 }
 
+void CAPCoupler::setClockSrource(EAPClockSource newClkSrc)
+{
+   if (newClkSrc == m_apClkSource)
+      return;
+   m_apClkSource = newClkSrc;
+   m_transport->hwResetAP();
+}
+
 apc_error_t CAPCoupler::sendCmd(uint8_t cmdId, const uint8_t* data, size_t length,
                                 ResponseCallback resCallback, ErrorResponseCallback errRespCallback)
 {
@@ -500,12 +547,19 @@ apc_error_t CAPCoupler::sendApSend(dn_api_loc_apsend_ctrl_t& hdr,
    return res;
 }
 
-apc_error_t CAPCoupler::sendSetApClkSource(uint8_t clkSource)
+apc_error_t CAPCoupler::sendSetApClkSource(uint8_t clkSource, bool isResetAP)
 {
-   return sendSetParam(DN_API_PARAM_AP_CLKSRC, &clkSource, sizeof(clkSource));
+   ResponseCallback      resCallback = NULL;
+   ErrorResponseCallback errResCallback = boost::bind(&CAPCoupler::handleSetClkSrcErrorResponse_p, this, _1, _2);
+   if (isResetAP)
+      resCallback = boost::bind(&CAPCoupler::handleSetClkSrcResponse_p, this, _1, _2, _3);
+   return sendSetParam(DN_API_PARAM_AP_CLKSRC, &clkSource, sizeof(clkSource), resCallback, errResCallback);
 }
 
-apc_error_t CAPCoupler::sendSetParam(uint8_t paramId, const uint8_t* data, size_t length)
+apc_error_t CAPCoupler::sendSetParam(uint8_t paramId, const uint8_t* data, size_t length,
+                                     ResponseCallback      resCallback,
+                                     ErrorResponseCallback errRespCallback)
+
 {
    std::vector<uint8_t> output;
    //output.reserve(length+1);
@@ -514,8 +568,8 @@ apc_error_t CAPCoupler::sendSetParam(uint8_t paramId, const uint8_t* data, size_
 
    apc_error_t res = APC_ERR_INIT;
    if (m_transport)
-      res = m_transport->insertMsg(DN_API_LOC_CMD_SETPARAM,
-                                            output.data(), output.size());      
+      res = m_transport->insertMsg(DN_API_LOC_CMD_SETPARAM, output.data(), output.size(), 
+                                   false, resCallback, errRespCallback);      
    return res;
 }
 
@@ -542,6 +596,12 @@ apc_error_t CAPCoupler::sendGetApStatus()
 apc_error_t CAPCoupler::sendGetNetId()
 {
    return sendGetParam(DN_API_PARAM_NETID);
+}
+
+apc_error_t CAPCoupler::sendGetApClkSource()
+{
+   m_apInfo.clksource = CLOCKSOURCR_NONE;
+   return sendGetParam(DN_API_PARAM_AP_CLKSRC);
 }
 
 apc_error_t CAPCoupler::sendGetParam(uint8_t paramId)
@@ -634,9 +694,7 @@ void CAPCoupler::prepareAP_p(uint32_t e)
       m_transport->disableAbort();
       m_transport->disableJoin();   // Disable joining
       m_transport->disconnectAP(true);
-std::cout << "prepareAP_p::waitEvents_p " << timoutMsec << std::endl;
       waitEvents_p(E_APM_BOOT | E_APM_REBOOT, timoutMsec);
-std::cout << "prepareAP_p::finish" << std::endl; 
       m_transport->enableAbort();
       return;
    }
@@ -680,6 +738,86 @@ void CAPCoupler::synchStop_p()
       waitEvents_p(E_MNGR_DISCONNECT, 1000);
 }
 
+void CAPCoupler::handleSetClkSrcErrorResponse_p(uint8_t cmdId, uint8_t rc)
+{
+   DUSTLOG_FATAL(m_logname, "Can not set Clock Source. RC " << (int)rc);
+   if (m_pWDdClient)
+      m_pWDdClient->disconnect(IChangeNodeState::STOP_FATAL_ERROR);
+}
+
+void CAPCoupler::handleSetClkSrcResponse_p(uint8_t cmdId, const uint8_t* response, size_t size)
+{
+   DUSTLOG_INFO(m_logname, "Reset AP after set new Clock Source: " << (int)m_apInfo.clksource);
+   m_transport->hwResetAP();
+}
+
+void CAPCoupler::setClockSource_p(bool isIntClk)
+{
+   for(int i = 0; m_apInfo.clksource == CLOCKSOURCR_NONE && i < 100; i++)
+      boost::this_thread::sleep_for(msec_t(10));
+
+   if (m_apInfo.clksource == CLOCKSOURCR_NONE) {
+      DUSTLOG_FATAL(m_logname, "Can not read Clock Source property from AP");
+      m_transport->hwResetAP();
+      return;
+   }
+
+   // PPS - Already set to AP
+   if (m_apClkSource == PPS && m_apInfo.clksource == DN_API_AP_CLK_SOURCE_PPS) {
+      DUSTLOG_INFO(m_logname, "AP Clock Source is: " << (int)m_apInfo.clksource);
+      return;
+   }
+
+   // Calculate permanent clock source property
+   uint8_t clkSrc = CLOCKSOURCR_NONE;
+   if (m_apClkSource == PPS)
+      clkSrc  = DN_API_AP_CLK_SOURCE_PPS;
+   else if (m_apInfo.clksource != DN_API_AP_CLK_SOURCE_AUTO)
+      clkSrc  = DN_API_AP_CLK_SOURCE_AUTO;
+
+   if (clkSrc  != CLOCKSOURCR_NONE) {
+      // Set permanent clock source property
+      m_apInfo.clksource = clkSrc;
+      sendSetApClkSource(m_apInfo.clksource, true);
+   } else {
+      // Set current clock source property
+      if (m_apClkSource != MNGRSET)
+         isIntClk  = m_apClkSource == INTERNAL;
+      m_apInfo.clksource = isIntClk  ? DN_API_AP_CLK_SOURCE_INTERNAL : DN_API_AP_CLK_SOURCE_NETWORK;
+      sendSetApClkSource(m_apInfo.clksource, false);
+   }
+   DUSTLOG_INFO(m_logname, "Set AP Clock Source to: " << (int)m_apInfo.clksource);
+}
+
+
+bool clkSrcStringToEnum(std::string str, EAPClockSource& clkSrc)
+{
+    // make it case insensitive
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+    if (str == "GPS") {
+      clkSrc = PPS;
+    } else if (str == "AUTO") {
+      clkSrc = MNGRSET;
+    } else {
+       return false;
+    }
+
+    return true;
+}
+
+
+std::string clkSrcEnumToString(EAPClockSource clkSrc)
+{
+    if (clkSrc == PPS) {
+       return "GPS";
+    } else if (clkSrc == MNGRSET) {
+       return "AUTO";
+    } else {
+       return "UNKNOWN";
+    }
+}
+
+
 uint32_t CAPCoupler::runStateMachine_p()
 {
    // Start Manager Client
@@ -692,7 +830,7 @@ uint32_t CAPCoupler::runStateMachine_p()
       boost::this_thread::sleep(boost::posix_time::milliseconds(RETRY_INTERVAL));
    }
    // Wait connection (or error)
-   events = waitEvents_p(E_MNGR_CONNECT | E_MNGR_DISCONNECT | E_APM_LOST | E_AP_RESET);
+   events = waitEvents_p(E_MNGR_CONNECT | E_MNGR_DISCONNECT | E_APM_BOOT | E_APM_LOST | E_AP_RESET);
 
    if ((events ^ E_MNGR_CONNECT) == 0) {
       // Only one Connect event received

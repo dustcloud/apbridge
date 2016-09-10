@@ -99,29 +99,13 @@ void    CAPCCtrlNotifThread::threadFun()
             m_pExtrnAPCNotif->apcStarted(pNotif->m_apc); 
             break;
          case APC_CONNECT:
-            m_pExtrnAPCNotif->apcConnected(pNotif->m_apc, 
-                                         pNotif->m_param.m_connect.ver,
-                                         pNotif->m_param.m_connect.netId,
-                                         pNotif->m_param.m_connect.apcId, 
-                                         pNotif->m_param.m_connect.name,
-                                         pNotif->m_param.m_connect.flags,
-                                         pNotif->m_param.m_connect.mySeq,
-                                         pNotif->m_param.m_connect.yourSeq);
+            m_pExtrnAPCNotif->apcConnected(pNotif->m_apc, pNotif->m_param.m_connect);
             break;
          case APC_DISCONNECT:
-            m_pExtrnAPCNotif->apcDisconnected(pNotif->m_apc, 
-                                            pNotif->m_param.m_disconnect.flags,
-                                            pNotif->m_param.m_disconnect.reason,
-                                            pNotif->m_param.m_disconnect.maxAllocOutPkt);
+            m_pExtrnAPCNotif->apcDisconnected(pNotif->m_apc, pNotif->m_param.m_disconnect);
             break;
          case APC_MSGRCVD:
-            m_pExtrnAPCNotif->messageReceived(pNotif->m_param.m_msg.apcId, 
-                                              pNotif->m_param.m_msg.flags,
-                                              pNotif->m_param.m_msg.mySeq,
-                                              pNotif->m_param.m_msg.yourSeq,
-                                              pNotif->m_param.m_msg.type,
-                                              pNotif->m_payload.data(),
-                                              pNotif->m_param.m_msg.size);
+            m_pExtrnAPCNotif->messageReceived(pNotif->m_param.m_msg, pNotif->m_payload.data(), pNotif->m_payloadSize);
             break;
 
          default:
@@ -154,8 +138,7 @@ void CAPCCtrlNotifThread::apcStarted(CAPCConnector::ptr pAPC)
    insertNotif_p(pNotif);
 }
 
-void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, uint32_t netId, ap_intf_id_t apcId, 
-                                     const char * name, uint8_t flags, uint32_t mySeq, uint32_t yourSeq)
+void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, const param_connected_s& param)
 {
    boost::unique_lock<boost::mutex> lock(m_lock);
    if (!m_isWork)
@@ -164,20 +147,11 @@ void CAPCCtrlNotifThread::apcConnected(CAPCConnector::ptr pAPC, uint32_t ver, ui
    apcnotif_t * pNotif = newNotif_p();
    pNotif->m_type = APC_CONNECT;
    pNotif->m_apc  = pAPC;
-   pNotif->m_param.m_connect.ver     = ver;
-   pNotif->m_param.m_connect.netId   = netId;
-   pNotif->m_param.m_connect.apcId   = apcId; 
-   strncpy(pNotif->m_param.m_connect.name, name, sizeof(pNotif->m_param.m_connect.name));
-   pNotif->m_param.m_connect.name[sizeof(pNotif->m_param.m_connect.name)-1] = 0;
-   pNotif->m_param.m_connect.flags = flags;
-   pNotif->m_param.m_connect.mySeq   = mySeq;
-   pNotif->m_param.m_connect.yourSeq = yourSeq;
-
+   pNotif->m_param.m_connect = param;
    insertNotif_p(pNotif);
 }
 
-void CAPCCtrlNotifThread::apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector::stopflags_t flags,
-                                        apc_stop_reason_t reason, uint32_t maxAllocOutPkt)
+void CAPCCtrlNotifThread::apcDisconnected(CAPCConnector::ptr pAPC, const param_disconnected_s& param)
 {
    boost::unique_lock<boost::mutex> lock(m_lock);
    if (!m_isWork)
@@ -185,32 +159,24 @@ void CAPCCtrlNotifThread::apcDisconnected(CAPCConnector::ptr pAPC, CAPCConnector
    apcnotif_t * pNotif = newNotif_p();
    pNotif->m_type = APC_DISCONNECT;
    pNotif->m_apc  = pAPC;
-   pNotif->m_param.m_disconnect.flags          = flags;
-   pNotif->m_param.m_disconnect.reason         = reason;
-   pNotif->m_param.m_disconnect.maxAllocOutPkt = maxAllocOutPkt;
-
+   pNotif->m_param.m_disconnect = param;
    insertNotif_p(pNotif);
 }
 
-void CAPCCtrlNotifThread::messageReceived(ap_intf_id_t apcId, uint8_t flags, uint32_t mySeq, uint32_t yourSeq, 
-                                          apc_msg_type_t type, const uint8_t * pPayload, uint16_t size)
+void CAPCCtrlNotifThread::messageReceived(const param_received_s& param, const uint8_t * pPayload, uint16_t size)
 {
    boost::unique_lock<boost::mutex> lock(m_lock);
    if (!m_isWork)
       return;
    apcnotif_t * pNotif = newNotif_p();
    pNotif->m_type = APC_MSGRCVD;
-   pNotif->m_param.m_msg.apcId = apcId;
-   pNotif->m_param.m_msg.flags = flags;
-   pNotif->m_param.m_msg.mySeq = mySeq;
-   pNotif->m_param.m_msg.yourSeq = yourSeq;
-   pNotif->m_param.m_msg.type = type;
+   pNotif->m_param.m_msg = param;
    if (size > 0) {
       if (size > pNotif->m_payload.size())
          pNotif->m_payload.resize((size & ~0x1F) + 0x20);   // multiple 32
       memcpy(pNotif->m_payload.data(), pPayload, size);
    }
-   pNotif->m_param.m_msg.size = size;
+   pNotif->m_payloadSize = size;
    insertNotif_p(pNotif);
 }
 

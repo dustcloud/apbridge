@@ -57,6 +57,8 @@ const char WELCOME_MSG[] = "APC";
 const char* APC_LOG_NAME = "apc.main";
 static const uint32_t WD_APC_KA_TIMEOUT_SEC = 2;
 EAPResetSignal APResetSignal = AP_RESET_SIGNAL_TX;
+EAPClockSource APM_DEFAULT_CLOCK_SOURCE = MNGRSET; // clock source
+
 
 boost::asio::io_service g_svc;
 
@@ -103,7 +105,10 @@ public:
    bool bReconnectSerial;
    bool bGpsdConn;
 
-   CApcProcessInputArguments(): CProcessInputArguments(DEFAULT_FILE_NAME) {
+   std::string sApClkSource;
+   EAPClockSource apClkSource;
+
+   CApcProcessInputArguments(): CProcessInputArguments(DEFAULT_FILE_NAME, "APC") {
       sHostName = DEFAULT_MNGR_HOST;
       port = DEFAULT_MNGR_PORT;
       sApiPortName = DEFAULT_DEV_API_PORT;
@@ -139,6 +144,9 @@ public:
 	  sResetSignal = RESET_SIGNAL_TX;
 	  bReconnectSerial = true;
 	  bGpsdConn = false;
+
+      apClkSource = APM_DEFAULT_CLOCK_SOURCE;
+
    }
 protected:
    virtual void add_options(boost::program_options::options_description& desc) {
@@ -174,6 +182,7 @@ protected:
       ("reset-signal", boost::program_options::value<string>(&sResetSignal), "Signal used to reset AP")
       ("reconnect-serial", boost::program_options::value<bool>(&bReconnectSerial), "Reconnect serial port on errors")
       ("max-packet-age", boost::program_options::value<uint32_t>(&maxPacketAge), "Maximim age allowed for packets wait in queue before triggering PAUSE to manager, in milliseconds")
+      ("ap-clock-source", boost::program_options::value<string>(&sApClkSource), "AP Clock Source, choice of GPS or AUTO")
       ;
    }
    virtual void process(boost::program_options::variables_map &vm) { 
@@ -183,6 +192,14 @@ protected:
       if (sResetSignal != RESET_SIGNAL_TX && 
           sResetSignal != RESET_SIGNAL_DTR) {
          throw boost::program_options::error("Invalid reset-signal value, must be TX or DTR.");
+      }
+
+      if (!sApClkSource.empty()) {
+          if (!clkSrcStringToEnum(sApClkSource, apClkSource)) {
+             ostringstream errStr;
+             errStr << "Invalid ap-clock-source value " << sApClkSource << ", should be GPS or AUTO.";
+             throw boost::program_options::error(errStr.str());
+          }
       }
    }
 };
@@ -345,7 +362,8 @@ try
       gpsCfg,
       inputArgs.resetBootTimeout,
       inputArgs.disconnectShortBootTimeoutMsec,
-      inputArgs.disconnectLongBootTimeoutMsec
+      inputArgs.disconnectLongBootTimeoutMsec,
+      inputArgs.apClkSource
    };
   
    result = coupler.open(apm_init_params);
@@ -363,9 +381,11 @@ try
    // Create and initialize Watchdog Notification object
    std::unique_ptr<IWdClntWrapper> pWdClnt(IWdClntWrapper::createWdClntWrapper(
       inputArgs.getVal().wdName, APC_LOG_NAME, epGetter, ctx.get()));
+   coupler.setWDClient(pWdClnt->getWdClient());
 
    // Create RPC workers
    std::unique_ptr<CAPCRpcWorker> apcwrk(new CAPCRpcWorker(ctx.get(), epRpc, inputArgs.clientId, 
+                                                           inputArgs.getVal().confName,
                                                            &coupler, &client, &port));
    
    // Create RPC sever

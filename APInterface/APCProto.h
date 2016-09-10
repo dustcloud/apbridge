@@ -6,8 +6,11 @@
  * Definitions and data structures for the Manager-APC Protocol
  */
 
+// Max size of string representation of software version
+const uint32_t SIZE_STR_VER = 80;
+
 // Protocol version
-const uint8_t  APC_PROTO_VER = 0;
+const uint8_t  APC_PROTO_VER = 1;
 
 /**
  * Values that represent types of APC interface messages
@@ -31,6 +34,11 @@ enum apc_msg_type_t : uint8_t
    APC_DISCONNECT_AP = 14, ///<  Mgr->APC Manager requests s/w reset of AP
 };
 ENUM2STR(apc_msg_type_t);
+
+/**
+ *    APC / AP flags
+ */
+const uint32_t APC_FL_INTSYNCH_AP = 0x1;    // AP should start in Internal-synch mode
 
 const uint32_t APC_COOKIE = 0x7E7E7E7E;
 
@@ -84,11 +92,12 @@ struct apc_msg_net_gpslock_s
 struct apc_msg_connect_s
 {
    uint8_t  ver;           ///< APC protocol version. 0=initial version
-   uint32_t flags;         ///< Reserved; Set to 0.
+   uint32_t flags;         ///< AP/APC flags see APC_FL_xxxx
    char     identity[32];  ///< String that uniquely describes the sender
    uint32_t sesId;         ///< Unique session id assigned by the Manager. . 0 - used client for start new session
    apc_msg_net_gpslock_s gpsstate; ///< GPS lock status 
-   uint32_t netId;         /// < Network ID (send by manager to APC)
+   uint32_t netId;         ///< Network ID Send by manager to APC
+   char     version[SIZE_STR_VER];   ///< APC / Manager software version
 };
 
 /**

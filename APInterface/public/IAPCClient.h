@@ -32,7 +32,7 @@ public:
     *
     * \param   name name of server
     */
-   virtual void connected (const std::string name) = 0;
+   virtual void connected (const std::string name, uint32_t flags) = 0;
 
    /**
     * The client has been disconnected from the Manager.

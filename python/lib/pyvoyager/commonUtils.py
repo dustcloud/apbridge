@@ -136,20 +136,20 @@ def getRPCServiceName(serviceDefName):
 class MainCmdArgParser(ArgumentParser) :
    # apphome is the VOYAGER_HOME for voyager and APC_HOME for apc.
    def __init__(self, apphome, desc, appname) :
-      self.apphome = apphome;
+      self.apphome = apphome
       self.appname = appname
       ArgumentParser.__init__(self, description=desc)
       ArgumentParser.add_argument(self, '--api-proto',    help="API protocol", choices = PROTOCOLS, 
                                   default = DEFAULT_PROTO)
-      ArgumentParser.add_argument(self, '--api-ipcpath',  help="Path to IPC files (only for IPC protocol)", 
+      ArgumentParser.add_argument(self, '--api-ipcpath',  help="Path to directory of IPC files (only for IPC protocol)", 
                                   default = DEFAULT_IPCPATH)
-      ArgumentParser.add_argument(self, '--api-host',     help="IP address of RPC server (only for TCP protocol)", 
+      ArgumentParser.add_argument(self, '--api-host',     help="Host or IP address of the RPC server (only for TCP protocol)", 
                                   default = DEFAULT_HOST)
-      ArgumentParser.add_argument(self, '--api-port',     help="Base RPC services port (only for TCP protocol)", 
+      ArgumentParser.add_argument(self, '--api-port',     help="Base port for RPC services (only for TCP protocol)", 
                                   default = DEFAULT_PORT)
       ArgumentParser.add_argument(self, '-c', '--config-file',   help="Configuration file")
-      ArgumentParser.add_argument(self, '-u', '--username', help="System user name")
-      ArgumentParser.add_argument(self, '--password', help="Interactive mode")
+      ArgumentParser.add_argument(self, '-u', '--username', help="User name")
+      ArgumentParser.add_argument(self, '--password', help="Password for user authentication")
       self.errmsg = ''
       
    def parse_args(self) :
@@ -162,6 +162,8 @@ class MainCmdArgParser(ArgumentParser) :
          args.config_file = '{0}.{1}'.format(self.appname, DEFAULT_CONFEXT)
       configName = getFullFileName(self.apphome, DEFAULT_CONFPATH, args.config_file)
       
+      isUsernameOverriden = bool(args.username)
+         
       args = None
       if os.path.isfile(configName)  :
          with open(configName, "r") as cfgFile:
@@ -177,6 +179,8 @@ class MainCmdArgParser(ArgumentParser) :
                if not (field and value):
                   self.errmsg = 'Error line "{0}" in configuration file: {1}'.format(line, configName)
                   return None
+               if isUsernameOverriden and field.strip() == 'password':
+                  continue
                fileArgs.append('--' + field.strip())
                fileArgs.append(value.strip())
             args = ArgumentParser.parse_args(self, fileArgs)
