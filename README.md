@@ -19,9 +19,4 @@ The AP Bridge sources are separated into several directories:
 
 ## Build instructions
 
-The AP Bridge software requires several external libraries that must be available on the build host. SCons is used to build the AP Bridge.
-
-```
-$ scons apbridge target=i686-linux
-$ scons apbridge_pkg target=i686-linux
-```
+Detailed [build instructions](https://dustcloud.atlassian.net/wiki/display/APB/AP+Bridge+Integrator%27s+Guide) are available on Dustcloud.org.
