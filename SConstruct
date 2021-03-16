@@ -45,7 +45,7 @@ command_line_vars.AddVariables(
     ('publish_dir', 'Directory for publishing released artifacts', DEFAULT_PUBLISH_DIR),
     ('repository_dir', "Directory to store the .deb file", DEFAULT_REPOSITORY_DIR),
     EnumVariable('target', 'Choose target platform', 'i686',
-                 allowed_values=('i686', 'x86_64', 'armpi')),
+                 allowed_values=('i686', 'x86_64', 'armpi', 'armpi-native')),
 )
 
 # for SCons to find the right compiler on Windows, TARGET_ARCH must be set 
@@ -214,6 +214,19 @@ def get_raspi2_platform(env):
     env['PLATFORM'] = 'armpi-linux'
     return env
 
+def get_raspi_native_platform(env):
+    'Set architecture-specific flags for raspberry pi 2'
+
+    #if int(env['debug']):
+    #    env.Append(CCFLAGS = ['-gdwarf-3'])
+
+    # Libraries
+    env['BOOST_LIBS'] = [b + env['boost_lib_suffix'] for b in BOOST_LIBS]
+    env['TOOL_LIBS'] = env['BOOST_LIBS'] + TOOL_LIBS + ['rt']
+    env['GPS_LIBS'] = ['gps']
+
+    env['PLATFORM'] = 'armpi-linux'
+    return env
 
 if platform.system() in 'Linux':
     # fill in defaults if not set
@@ -234,6 +247,8 @@ if platform.system() in 'Linux':
 
     if env['target'] == 'armpi':
         get_raspi2_platform(env)
+    elif env['target'] == 'armpi-native':
+        get_raspi_native_platform(env)
     elif env['target'] == 'i686':
         get_i686_platform(env)
     elif env['target'] == 'x86_64':
