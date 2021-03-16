@@ -162,7 +162,7 @@ apc_error_t CAPMSerializer::handleCmd(uint8_t cmdId, const uint8_t* data, size_t
             m_notifHandler->handleEvent(*pMsg);
          }
       } else {
-         DUSTLOG_ERROR("apm.io", "bad event notif")
+         DUSTLOG_ERROR("apm.io", "bad event notif");
       }
    }
    break;
@@ -176,7 +176,7 @@ apc_error_t CAPMSerializer::handleCmd(uint8_t cmdId, const uint8_t* data, size_t
          pMsg->packetId = ntohs(pMsg->packetId);
          m_notifHandler->handleTXDone(*pMsg);
       } else {
-         DUSTLOG_ERROR("apm.io", "bad TX done notif")
+         DUSTLOG_ERROR("apm.io", "bad TX done notif");
       }
    }
    break;
@@ -204,7 +204,7 @@ apc_error_t CAPMSerializer::handleCmd(uint8_t cmdId, const uint8_t* data, size_t
          // TODO: byte order conversion
          m_notifHandler->handleTimeIndication(*pMsg);
       } else {
-         DUSTLOG_ERROR("apm.io", "bad Time indication notif")
+         DUSTLOG_ERROR("apm.io", "bad Time indication notif");
       }
    }
    break;
@@ -216,7 +216,7 @@ apc_error_t CAPMSerializer::handleCmd(uint8_t cmdId, const uint8_t* data, size_t
       if (pMsg != nullptr) {
          m_notifHandler->handleReadyForTime(*pMsg);
       } else {
-         DUSTLOG_ERROR("apm.io", "bad Ready for time notif")
+         DUSTLOG_ERROR("apm.io", "bad Ready for time notif");
       }
    }
    break;
